@@ -13,7 +13,7 @@ const User = sequelize.define("user", {
   },
   refreshToken: {
     type: DataTypes.STRING,
-  }
+  },
 });
 
 User.sync();

@@ -1,28 +1,36 @@
 const express = require("express");
-const cors = require("cors");
-
-const allowedOrigins = [
-  "http://127.0.0.1:3000",
-  "https://jobtracking.vercel.app",
-];
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  optionsSuccessStatus: 200,
-};
-
 const app = express();
+const cors = require("cors");
+const corsOptions = require("./config/corsOptions");
+const verifyJWT = require("./middleware/verifyJWT");
+const cookieParser = require("cookie-parser");
+const credentials = require("./middleware/credentials");
+
+// Handle options credentials check - before CORS!
+// and fetch cookies credentials requirement
+app.use(credentials);
+
+// Cross Origin Resource Sharing
 app.use(cors(corsOptions));
+
+// built-in middleware to handle urlencoded form data
+app.use(express.urlencoded({ extended: false }));
+
+// built-in middleware for json
 app.use(express.json());
+
+//middleware for cookies
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.send("Okay");
 });
+app.use("/register", require("./routes/register"));
+app.use("/auth", require("./routes/auth"));
+app.use("/refresh", require("./routes/refresh"));
+app.use("/logout", require("./routes/logout"));
+
+app.use(verifyJWT);
 
 app.listen(4000, () => {
   console.log("running on port 4000");
