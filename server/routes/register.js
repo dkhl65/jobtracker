@@ -10,7 +10,7 @@ const handleNewUser = async (req, res) => {
       .status(400)
       .json({ message: "Username and password are required." });
   // check for duplicate usernames in the db
-  const duplicate = usersDB.findOne({ where: { username: user } });
+  const duplicate = await usersDB.findOne({ where: { username: user } });
   if (duplicate) {
     return res.sendStatus(409); //Conflict
   }
