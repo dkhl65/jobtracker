@@ -1,10 +1,15 @@
 import "./App.css";
-import Home from "./components/Home";
-import Jobs from "./components/Jobs";
-import Layout from "./components/Layout";
 import RequireAuth from "./components/RequireAuth";
 import PersistLogin from "./components/PersistLogin";
 import { Routes, Route } from "react-router-dom";
+import Home from "./components/Home";
+import Jobs from "./components/Jobs";
+import Layout from "./components/Layout";
+import Calendar from "./components/Calendar";
+import "@fontsource/roboto/300.css";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
 
 function App() {
   return (
@@ -18,6 +23,7 @@ function App() {
           <Route element={<PersistLogin />}>
             <Route element={<RequireAuth />}>
               <Route path="jobs" element={<Jobs />} />
+              <Route path="calendar" element={<Calendar />} />
             </Route>
           </Route>
         </Route>

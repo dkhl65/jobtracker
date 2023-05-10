@@ -31,6 +31,7 @@ app.use("/refresh", require("./routes/refresh"));
 app.use("/logout", require("./routes/logout"));
 
 app.use(verifyJWT);
+app.use("/user", require("./routes/user"));
 
 app.listen(4000, () => {
   console.log("running on port 4000");

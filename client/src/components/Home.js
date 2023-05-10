@@ -199,7 +199,7 @@ function Home() {
               setPwdErrMsg("");
               setConfirmPwdErrMsg("");
             }}
-            onBlur={(e) => {
+            onBlur={() => {
               if (confirmPwd.length > 0 && confirmPwd !== pwd) {
                 setConfirmPwdErrMsg("Passwords do not match.");
               }
