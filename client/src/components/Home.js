@@ -20,6 +20,7 @@ function Home() {
   const [hasAccount, setHasAccount] = useState(true);
   const [registered, setRegistered] = useState(false);
   const [waiting, setWaiting] = useState(false);
+  const [refreshed, setRefreshed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const refresh = useRefreshToken();
@@ -108,181 +109,187 @@ function Home() {
       .then(() => {
         navigate(from, { replace: true });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setRefreshed(true));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Container maxWidth="sm">
       <Typography component="h1" variant="h1" align="center">
-        Job Tracking
+        {refreshed ? "Job Tracking" : "Loading..."}
       </Typography>
-      <Typography>
-        Record applied jobs, interviews and rejections. View analytics on them,
-        such as interview rate and applications per day. Good luck!
-      </Typography>
-      <Box
-        sx={{
-          mt: 2,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <Typography component="h1" variant="h5">
-          {hasAccount ? "Sign in" : "Sign up"}
+      {refreshed && (
+        <Typography>
+          Record applied jobs, interviews and rejections. View analytics on
+          them, such as interview rate and applications per day. Good luck!
         </Typography>
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="username"
-            label="Username"
-            name="username"
-            error={!hasAccount && userErrMsg.length > 0}
-            helperText={!hasAccount && userErrMsg}
-            value={user}
-            onChange={(e) => {
-              setUser(e.target.value);
-              setUserErrMsg("");
-              setConfirmUserErrMsg("");
-            }}
-            onBlur={(e) => {
-              if (
-                confirmUser.length > 0 &&
-                confirmUser.trim().toLowerCase() !== user.trim().toLowerCase()
-              ) {
-                setConfirmUserErrMsg("Usernames do not match.");
-              }
-            }}
-            autoFocus
-          />
-          {!hasAccount && (
+      )}
+      {refreshed && (
+        <Box
+          sx={{
+            mt: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <Typography component="h1" variant="h5">
+            {hasAccount ? "Sign in" : "Sign up"}
+          </Typography>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
             <TextField
               margin="normal"
-              required={!hasAccount}
+              required
               fullWidth
-              id="confirm-username"
-              label="Confirm Username"
-              name="confirm-username"
-              autoComplete="off"
-              error={confirmUserErrMsg.length > 0}
-              helperText={confirmUserErrMsg}
-              value={confirmUser}
+              id="username"
+              label="Username"
+              name="username"
+              error={!hasAccount && userErrMsg.length > 0}
+              helperText={!hasAccount && userErrMsg}
+              value={user}
               onChange={(e) => {
-                setConfirmUser(e.target.value);
+                setUser(e.target.value);
+                setUserErrMsg("");
                 setConfirmUserErrMsg("");
               }}
               onBlur={(e) => {
                 if (
+                  confirmUser.length > 0 &&
                   confirmUser.trim().toLowerCase() !== user.trim().toLowerCase()
                 ) {
                   setConfirmUserErrMsg("Usernames do not match.");
                 }
               }}
+              autoFocus
             />
-          )}
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            error={!hasAccount && pwdErrMsg.length > 0}
-            helperText={!hasAccount && pwdErrMsg}
-            value={pwd}
-            onChange={(e) => {
-              setPwd(e.target.value);
-              setPwdErrMsg("");
-              setConfirmPwdErrMsg("");
-            }}
-            onBlur={() => {
-              if (confirmPwd.length > 0 && confirmPwd !== pwd) {
-                setConfirmPwdErrMsg("Passwords do not match.");
-              }
-            }}
-          />
-          {!hasAccount && (
+            {!hasAccount && (
+              <TextField
+                margin="normal"
+                required={!hasAccount}
+                fullWidth
+                id="confirm-username"
+                label="Confirm Username"
+                name="confirm-username"
+                autoComplete="off"
+                error={confirmUserErrMsg.length > 0}
+                helperText={confirmUserErrMsg}
+                value={confirmUser}
+                onChange={(e) => {
+                  setConfirmUser(e.target.value);
+                  setConfirmUserErrMsg("");
+                }}
+                onBlur={(e) => {
+                  if (
+                    confirmUser.trim().toLowerCase() !==
+                    user.trim().toLowerCase()
+                  ) {
+                    setConfirmUserErrMsg("Usernames do not match.");
+                  }
+                }}
+              />
+            )}
             <TextField
               margin="normal"
-              required={!hasAccount}
+              required
               fullWidth
-              name="confirm-password"
-              label="Confirm Password"
+              name="password"
+              label="Password"
               type="password"
-              id="confirm-password"
-              autoComplete="off"
-              error={confirmPwdErrMsg.length > 0}
-              helperText={confirmPwdErrMsg}
-              value={confirmPwd}
+              id="password"
+              autoComplete="current-password"
+              error={!hasAccount && pwdErrMsg.length > 0}
+              helperText={!hasAccount && pwdErrMsg}
+              value={pwd}
               onChange={(e) => {
-                setConfirmPwd(e.target.value);
+                setPwd(e.target.value);
+                setPwdErrMsg("");
                 setConfirmPwdErrMsg("");
               }}
-              onBlur={(e) => {
-                if (confirmPwd !== pwd) {
+              onBlur={() => {
+                if (confirmPwd.length > 0 && confirmPwd !== pwd) {
                   setConfirmPwdErrMsg("Passwords do not match.");
                 }
               }}
             />
-          )}
-          {hasAccount && (
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={persist}
-                  onChange={(e) => setPersist(e.target.checked)}
-                />
-              }
-              label="Stay logged in."
-            />
-          )}
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Button
+            {!hasAccount && (
+              <TextField
+                margin="normal"
+                required={!hasAccount}
                 fullWidth
-                variant="outlined"
-                sx={{ mt: 3, mb: 2 }}
-                onClick={(e) => setHasAccount(!hasAccount)}
-              >
-                {hasAccount ? "Need an account?" : "Have an account?"}
-              </Button>
-            </Grid>
-            <Grid item xs={6}>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                disabled={
-                  pwd.length === 0 ||
-                  user.length === 0 ||
-                  (!hasAccount &&
-                    (pwd !== confirmPwd ||
-                      user.trim().toLowerCase() !==
-                        confirmUser.trim().toLowerCase()))
+                name="confirm-password"
+                label="Confirm Password"
+                type="password"
+                id="confirm-password"
+                autoComplete="off"
+                error={confirmPwdErrMsg.length > 0}
+                helperText={confirmPwdErrMsg}
+                value={confirmPwd}
+                onChange={(e) => {
+                  setConfirmPwd(e.target.value);
+                  setConfirmPwdErrMsg("");
+                }}
+                onBlur={(e) => {
+                  if (confirmPwd !== pwd) {
+                    setConfirmPwdErrMsg("Passwords do not match.");
+                  }
+                }}
+              />
+            )}
+            {hasAccount && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={persist}
+                    onChange={(e) => setPersist(e.target.checked)}
+                  />
                 }
-                sx={{ mt: 3, mb: 2 }}
-              >
-                {hasAccount ? "Sign in" : "Sign up"}
-              </Button>
+                label="Stay logged in."
+              />
+            )}
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{ mt: 3, mb: 2 }}
+                  onClick={(e) => setHasAccount(!hasAccount)}
+                >
+                  {hasAccount ? "Need an account?" : "Have an account?"}
+                </Button>
+              </Grid>
+              <Grid item xs={6}>
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  disabled={
+                    pwd.length === 0 ||
+                    user.length === 0 ||
+                    (!hasAccount &&
+                      (pwd !== confirmPwd ||
+                        user.trim().toLowerCase() !==
+                          confirmUser.trim().toLowerCase()))
+                  }
+                  sx={{ mt: 3, mb: 2 }}
+                >
+                  {hasAccount ? "Sign in" : "Sign up"}
+                </Button>
+              </Grid>
             </Grid>
-          </Grid>
+          </Box>
+          {errMsg.length > 0 && <Alert severity="error">{errMsg}</Alert>}
+          {waiting && (
+            <Alert severity="info">
+              {hasAccount ? "Signing in..." : "Signing up..."}
+            </Alert>
+          )}
+          {registered && (
+            <Alert severity="success">
+              Your account has been registered! Please sign in.
+            </Alert>
+          )}
         </Box>
-        {errMsg.length > 0 && <Alert severity="error">{errMsg}</Alert>}
-        {waiting && (
-          <Alert severity="info">
-            {hasAccount ? "Signing in..." : "Signing up..."}
-          </Alert>
-        )}
-        {registered && (
-          <Alert severity="success">
-            Your account has been registered! Please sign in.
-          </Alert>
-        )}
-      </Box>
+      )}
     </Container>
   );
 }

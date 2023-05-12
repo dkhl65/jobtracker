@@ -24,6 +24,8 @@ import {
 import LaunchIcon from "@mui/icons-material/Launch";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -32,6 +34,16 @@ import NavBar from "./NavBar";
 
 const CLOSED = -1;
 const NEW = -2;
+const blankForm = {
+  company: "",
+  location: "",
+  link: "",
+  application: "",
+  assessment: [""],
+  interview: [""],
+  rejection: "",
+  notes: "",
+};
 
 function Jobs() {
   const [page, setPage] = useState(0);
@@ -39,8 +51,26 @@ function Jobs() {
   const [jobs, setJobs] = useState([]);
   const [editOpen, setEditOpen] = useState(CLOSED);
   const [deleteOpen, setDeleteOpen] = useState(CLOSED);
+  const [formData, setFormData] = useState(blankForm);
 
-  useEffect(() => {
+  const editJob = (jobNumber) => {
+    const newForm = { ...jobs[jobNumber] };
+    newForm.assessment = jobs[jobNumber].assessment
+      .split(",")
+      .map((item) => item.trim());
+    newForm.interview = jobs[jobNumber].interview
+      .split(",")
+      .map((item) => item.trim());
+    setFormData(newForm);
+    setEditOpen(jobNumber);
+  };
+
+  const newJob = () => {
+    setFormData(blankForm);
+    setEditOpen(NEW);
+  };
+
+  const refresh = () => {
     const temp = [
       {
         company: "Konrad",
@@ -62,19 +92,33 @@ function Jobs() {
         notes: "The job is far away.",
         link: "",
       },
+      {
+        company: "EllisDon",
+        location: "1004 Middlegate Rd, Mississauga, Ontario L4Y",
+        application: "2022-05-08",
+        assessment: "",
+        interview: "2022-05-19,2022-05-25",
+        rejection: "2022-05-26",
+        notes: "",
+        link: "https://recruiting.ultipro.ca/ELL5000/JobBoard/fa7dd324-0b16-f8cb-f544-f46b499e5db7/OpportunityDetail?opportunityId=51c5850a-46bf-4307-afdc-7ac9fbf4b411&utm_source=LINKEDIN&utm_medium=referrer",
+      },
     ];
     setJobs(temp);
+  };
+
+  useEffect(() => {
+    refresh();
   }, []);
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <NavBar />
-      <Container sx={{ marginTop: "10px" }}>
+      <Container maxWidth="lg" sx={{ marginTop: "10px" }}>
         <Toolbar>
           <Box sx={{ flexGrow: 1, mb: "10px" }}>
             <TextField placeholder="Search…" />
           </Box>
-          <Button variant="contained" onClick={() => setEditOpen(NEW)}>
+          <Button variant="contained" onClick={newJob}>
             Add Job
           </Button>
         </Toolbar>
@@ -118,12 +162,14 @@ function Jobs() {
                   </TableCell>
                   <TableCell>{row.application || "Unknown"}</TableCell>
                   <TableCell>{row.assessment || "None"}</TableCell>
-                  <TableCell>{row.interview || "None"}</TableCell>
+                  <TableCell>
+                    {row.interview.replace(",", "\n") || "None"}
+                  </TableCell>
                   <TableCell>{row.rejection || "None"}</TableCell>
                   <TableCell>{row.notes}</TableCell>
-                  <TableCell>
+                  <TableCell width="120px">
                     <Tooltip title="Edit">
-                      <IconButton onClick={() => setEditOpen(key)}>
+                      <IconButton onClick={() => editJob(key)}>
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
@@ -162,7 +208,7 @@ function Jobs() {
           }}
         />
       </Container>
-      <Dialog open={editOpen !== -1} onClose={() => setEditOpen(CLOSED)}>
+      <Dialog open={editOpen !== CLOSED} onClose={() => setEditOpen(CLOSED)}>
         <DialogTitle>
           {(editOpen >= 0 && `Edit ${jobs[editOpen].company} Application`) ||
             "Add Job"}
@@ -174,7 +220,10 @@ function Jobs() {
             variant="standard"
             type="text"
             margin="dense"
-            defaultValue={(editOpen >= 0 && jobs[editOpen].company) || ""}
+            value={formData.company}
+            onChange={(e) =>
+              setFormData({ ...formData, company: e.target.value })
+            }
           />
           <TextField
             label="Location"
@@ -182,7 +231,10 @@ function Jobs() {
             variant="standard"
             type="text"
             margin="dense"
-            defaultValue={(editOpen >= 0 && jobs[editOpen].location) || ""}
+            value={formData.location}
+            onChange={(e) =>
+              setFormData({ ...formData, location: e.target.value })
+            }
           />
           <TextField
             label="Link to Job Post"
@@ -190,62 +242,137 @@ function Jobs() {
             variant="standard"
             type="text"
             margin="dense"
-            defaultValue={(editOpen >= 0 && jobs[editOpen].link) || ""}
+            value={formData.link}
+            onChange={(e) => setFormData({ ...formData, link: e.target.value })}
           />
           <DatePicker
             format="YYYY-MM-DD"
             margin="dense"
             label="Application Date"
-            defaultValue={
-              (editOpen >= 0 &&
-                jobs[editOpen].application.length > 0 &&
-                dayjs(jobs[editOpen].application)) ||
-              null
+            value={
+              formData.application.length > 0
+                ? dayjs(formData.application)
+                : null
+            }
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                application: e ? `${e.$y}-${e.$M + 1}-${e.$D}` : "",
+              })
             }
             sx={{ mt: "15px", mr: "15px" }}
           />
-          <DatePicker
-            format="YYYY-MM-DD"
-            margin="dense"
-            label="Technical Assessment"
-            defaultValue={
-              (editOpen >= 0 &&
-                jobs[editOpen].assessment.length > 0 &&
-                dayjs(jobs[editOpen].assessment)) ||
-              null
-            }
-            sx={{ mt: "15px" }}
-          />
-          <DatePicker
-            format="YYYY-MM-DD"
-            margin="dense"
-            label="Interview Date"
-            defaultValue={
-              (editOpen >= 0 &&
-                jobs[editOpen].interview.length > 0 &&
-                dayjs(jobs[editOpen].interview)) ||
-              null
-            }
-            sx={{ mt: "15px", mr: "15px" }}
-          />
+          <br />
+          {formData.assessment.map((value, index) => (
+            <Box key={index}>
+              <DatePicker
+                format="YYYY-MM-DD"
+                margin="dense"
+                label={`Technical Assessment ${index + 1}`}
+                value={value.length > 0 ? dayjs(value) : null}
+                onChange={(e) => {
+                  formData.assessment[index] = e
+                    ? `${e.$y}-${e.$M + 1}-${e.$D}`
+                    : "";
+                  setFormData({ ...formData });
+                }}
+                sx={{ mt: "15px" }}
+              />
+              {formData.assessment.length > 1 && (
+                <Tooltip title="Remove technical assessment date">
+                  <IconButton
+                    sx={{ mt: "22px" }}
+                    onClick={() => {
+                      formData.assessment.splice(index, 1);
+                      setFormData({ ...formData });
+                    }}
+                  >
+                    <RemoveIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {Number(index) === formData.assessment.length - 1 && (
+                <Tooltip title="Add another technical assessment date">
+                  <IconButton
+                    sx={{ mt: "22px" }}
+                    onClick={() => {
+                      formData.assessment.push("");
+                      setFormData({ ...formData });
+                    }}
+                  >
+                    <AddIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <br />
+            </Box>
+          ))}
+          {formData.interview.map((value, index) => (
+            <Box key={index}>
+              <DatePicker
+                format="YYYY-MM-DD"
+                margin="dense"
+                label={`Interview ${index + 1}`}
+                value={value.length > 0 ? dayjs(value) : null}
+                onChange={(e) => {
+                  formData.interview[index] = e
+                    ? `${e.$y}-${e.$M + 1}-${e.$D}`
+                    : "";
+                  setFormData({ ...formData });
+                }}
+                sx={{ mt: "15px" }}
+              />
+              {formData.interview.length > 1 && (
+                <Tooltip title="Remove interview date">
+                  <IconButton
+                    sx={{ mt: "22px" }}
+                    onClick={() => {
+                      formData.interview.splice(index, 1);
+                      setFormData({ ...formData });
+                    }}
+                  >
+                    <RemoveIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {Number(index) === formData.interview.length - 1 && (
+                <Tooltip title="Add another interview date">
+                  <IconButton
+                    sx={{ mt: "22px" }}
+                    onClick={() => {
+                      formData.interview.push("");
+                      setFormData({ ...formData });
+                    }}
+                  >
+                    <AddIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <br />
+            </Box>
+          ))}
           <DatePicker
             format="YYYY-MM-DD"
             margin="dense"
             label="Rejection Date"
-            defaultValue={
-              (editOpen >= 0 &&
-                jobs[editOpen].rejection.length > 0 &&
-                dayjs(jobs[editOpen].rejection)) ||
-              null
+            value={
+              formData.rejection.length > 0 ? dayjs(formData.rejection) : null
+            }
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                rejection: e ? `${e.$y}-${e.$M + 1}-${e.$D}` : "",
+              })
             }
             sx={{ mt: "15px" }}
           />
+          <br />
           <TextField
             label="Notes"
             variant="standard"
             type="text"
             margin="dense"
-            defaultValue={(editOpen >= 0 && jobs[editOpen].notes) || null}
+            defaultValue={formData.notes}
             fullWidth
             multiline
           />
@@ -271,6 +398,9 @@ function Jobs() {
           <Button onClick={() => setDeleteOpen(CLOSED)}>Yes</Button>
           <Button onClick={() => setDeleteOpen(CLOSED)}>No</Button>
         </DialogActions>
+        <DialogContentText>
+            Are yous
+          </DialogContentText>
       </Dialog>
     </LocalizationProvider>
   );

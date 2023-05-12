@@ -27,7 +27,7 @@ function NavBar() {
     axiosPrivate.get("/user").then((res) => {
       setUser(res.data.user);
     });
-  });
+  }, [axiosPrivate]);
 
   return (
     <AppBar position="static">
