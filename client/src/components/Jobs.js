@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import {
   Container,
   Button,
   Toolbar,
   Box,
   TextField,
+  Alert,
   Paper,
   Table,
   TableHead,
@@ -33,8 +35,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import NavBar from "./NavBar";
 
-const CLOSED = -1;
-const NEW = -2;
+const NEW = -1;
 const blankForm = {
   company: "",
   location: "",
@@ -47,18 +48,22 @@ const blankForm = {
 };
 
 function Jobs() {
+  const axiosPrivate = useAxiosPrivate();
+  const [loadingJobs, setLoadingJobs] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [jobs, setJobs] = useState([]);
-  const [editOpen, setEditOpen] = useState(CLOSED);
-  const [deleteOpen, setDeleteOpen] = useState(CLOSED);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(NEW);
   const [formData, setFormData] = useState(blankForm);
+  const [formMessage, setFormMessage] = useState({ error: false, message: "" });
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("application");
   const visibleRows = useMemo(() => {
     jobs.sort((x, y) => {
-      const a = x[orderBy].toString();
-      const b = y[orderBy].toString();
+      const a = x[orderBy];
+      const b = y[orderBy];
       if ((a < b && order === "asc") || (a > b && order === "desc")) {
         return -1;
       }
@@ -70,6 +75,29 @@ function Jobs() {
     return jobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   }, [jobs, page, rowsPerPage, order, orderBy]);
 
+  const reload = () => {
+    setLoadingJobs(true);
+    axiosPrivate
+      .get("/jobs")
+      .then((res) => {
+        setJobs(res.data);
+        setLoadingJobs(false);
+      })
+      .catch((err) => {
+        if (!err?.response) {
+          setLoadingJobs("No server response.");
+        } else if (err.response?.status === 500) {
+          setLoadingJobs(
+            `Internal server error: ${
+              err.response.data?.name || "unknown error"
+            }. Please try again later.`
+          );
+        } else {
+          setLoadingJobs(err.message);
+        }
+      });
+  };
+
   const changeOrder = (column, defaultOrder = "desc") => {
     if (orderBy === column && order === defaultOrder) {
       setOrder(defaultOrder === "desc" ? "asc" : "desc");
@@ -79,57 +107,96 @@ function Jobs() {
     setOrderBy(column);
   };
 
-  const editJob = (jobNumber) => {
-    const newForm = { ...jobs[jobNumber] };
-    newForm.assessment = jobs[jobNumber].assessment
-      .split(",")
-      .map((item) => item.trim());
-    newForm.interview = jobs[jobNumber].interview
-      .split(",")
-      .map((item) => item.trim());
+  const openEditForm = (jobNumber) => {
+    const newForm = {
+      ...jobs[jobNumber],
+      assessment: jobs[jobNumber].assessment.split(","),
+      interview: jobs[jobNumber].interview.split(","),
+    };
     setFormData(newForm);
-    setEditOpen(jobNumber);
+    setEditOpen(true);
+    setSelectedJob(jobNumber);
   };
 
-  const refresh = () => {
-    const temp = [
-      {
-        company: "Konrad",
-        location: "469 King St W, Floor 2, Toronto",
-        application: "2022-01-05",
-        assessment: "",
-        interview: "",
-        rejection: "",
-        notes: "There is a lot of text.",
-        link: "https://boards.greenhouse.io/konradgroup/jobs/4806453003?gh_src=a742e8c03us",
-      },
-      {
-        company: "3rdwave",
-        location: "225 Duncan Mill Rd, North York, ON M3B 3K9",
-        application: "2022-01-31",
-        assessment: "",
-        interview: "2022-02-07",
-        rejection: "2022-02-15",
-        notes: "The job is far away.",
-        link: "",
-      },
-      {
-        company: "EllisDon",
-        location: "1004 Middlegate Rd, Mississauga, Ontario L4Y",
-        application: "2022-05-08",
-        assessment: "",
-        interview: "2022-05-19,2022-05-25",
-        rejection: "2022-05-26",
-        notes: "",
-        link: "https://recruiting.ultipro.ca/ELL5000/JobBoard/fa7dd324-0b16-f8cb-f544-f46b499e5db7/OpportunityDetail?opportunityId=51c5850a-46bf-4307-afdc-7ac9fbf4b411&utm_source=LINKEDIN&utm_medium=referrer",
-      },
-    ];
-    setJobs(temp);
+  const saveJob = async (e) => {
+    e.preventDefault();
+    if (formMessage.message.length > 0) {
+      return;
+    }
+    const jobApp = {
+      ...formData,
+      assessment: formData.assessment.filter(Boolean).join(","),
+      interview: formData.interview.filter(Boolean).join(","),
+      notes: formData.notes.trim(),
+    };
+    try {
+      if (selectedJob === NEW) {
+        setFormMessage({ error: false, message: "Adding job application..." });
+        await axiosPrivate.post("/jobs", jobApp);
+      } else {
+        setFormMessage({ error: false, message: "Saving..." });
+        await axiosPrivate.put("/jobs", jobApp);
+      }
+      setEditOpen(false);
+      reload();
+    } catch (err) {
+      if (!err?.response) {
+        setFormMessage({ error: true, message: "No server response." });
+      } else if (err.response?.status === 500) {
+        setFormMessage({
+          error: true,
+          message: `Internal server error: ${
+            err.response.data?.name || "unknown error"
+          }. Please try again later.`,
+        });
+      } else {
+        setFormMessage({
+          error: true,
+          message: err.response?.data?.message || err.message,
+        });
+      }
+    }
+  };
+
+  const deleteJob = (e) => {
+    e.preventDefault();
+    if (formMessage.message.length > 0 || !jobs[selectedJob]?.id) {
+      return;
+    }
+    setFormMessage({ error: false, message: "Deleting job application..." });
+    axiosPrivate
+      .delete("/jobs", { data: { id: jobs[selectedJob].id } })
+      .then(() => {
+        setDeleteOpen(false);
+        setSelectedJob(NEW);
+        reload();
+      })
+      .catch((err) => {
+        if (!err?.response) {
+          setFormMessage({ error: true, message: "No server response." });
+        } else if (err.response?.status === 500) {
+          setFormMessage({
+            error: true,
+            message: `Internal server error: ${
+              err.response.data?.name || "unknown error"
+            }. Please try again later.`,
+          });
+        } else {
+          setFormMessage({
+            error: true,
+            message: err.response?.data?.message || err.message,
+          });
+        }
+      });
   };
 
   useEffect(() => {
-    refresh();
-  }, []);
+    setFormMessage({ error: false, message: "" });
+  }, [editOpen, deleteOpen]);
+
+  useEffect(() => {
+    reload();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -158,7 +225,8 @@ function Jobs() {
             sx={{ ml: "10px" }}
             onClick={() => {
               setFormData(blankForm);
-              setEditOpen(NEW);
+              setEditOpen(true);
+              setSelectedJob(NEW);
             }}
           >
             Add Job
@@ -169,7 +237,7 @@ function Jobs() {
           sx={{ backgroundColor: "ghostwhite" }}
         >
           <Table>
-            <TableHead sx={{ position: "sticky" }}>
+            <TableHead>
               <TableRow>
                 <TableCell>
                   <TableSortLabel
@@ -222,8 +290,8 @@ function Jobs() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {visibleRows.map((row, key) => (
-                <TableRow key={key}>
+              {visibleRows.map((row, index) => (
+                <TableRow key={index}>
                   <TableCell>
                     <a
                       href={`https://www.google.com/search?q=${row.company}`}
@@ -234,31 +302,48 @@ function Jobs() {
                     </a>
                   </TableCell>
                   <TableCell>
-                    <a
-                      href={`https://maps.google.com/?q=${row.location}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {row.location || "Unknown"}
-                    </a>
+                    {row.location ? (
+                      <a
+                        href={`https://maps.google.com/?q=${row.location}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {row.location}
+                      </a>
+                    ) : (
+                      "Unknown"
+                    )}
                   </TableCell>
                   <TableCell>{row.application || "Unknown"}</TableCell>
-                  <TableCell>{row.assessment || "None"}</TableCell>
+                  <TableCell>
+                    {row.assessment.split(",").map((date, index) => (
+                      <Box key={index}>{date || "None"}</Box>
+                    ))}
+                  </TableCell>
                   <TableCell>
                     {row.interview.split(",").map((date, index) => (
                       <Box key={index}>{date || "None"}</Box>
                     ))}
                   </TableCell>
                   <TableCell>{row.rejection || "None"}</TableCell>
-                  <TableCell>{row.notes}</TableCell>
+                  <TableCell>
+                    {row.notes.split("\n").map((line, index) => {
+                      return <Box key={index}>{line}</Box>;
+                    })}
+                  </TableCell>
                   <TableCell width="120px">
                     <Tooltip title="Edit">
-                      <IconButton onClick={() => editJob(key)}>
+                      <IconButton onClick={() => openEditForm(index)}>
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete">
-                      <IconButton onClick={() => setDeleteOpen(key)}>
+                      <IconButton
+                        onClick={() => {
+                          setSelectedJob(index);
+                          setDeleteOpen(true);
+                        }}
+                      >
                         <DeleteIcon />
                       </IconButton>
                     </Tooltip>
@@ -279,14 +364,40 @@ function Jobs() {
             </TableBody>
           </Table>
         </TableContainer>
+        <Box
+          sx={{
+            mt: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          {loadingJobs === true && (
+            <Alert severity="info">
+              Loading your list of job applications...
+            </Alert>
+          )}
+          {loadingJobs.length && (
+            <Alert severity="error">
+              Could not load your job applications. {loadingJobs}
+            </Alert>
+          )}
+        </Box>
       </Container>
-      <Dialog open={editOpen !== CLOSED} onClose={() => setEditOpen(CLOSED)}>
-        <Box component="form" onSubmit={(e) => e.preventDefault()}>
+      <Dialog
+        open={editOpen}
+        onClose={() => {
+          if (formMessage.error || formMessage.message.length === 0) {
+            setEditOpen(false);
+          }
+        }}
+      >
+        <Box component="form" onSubmit={saveJob}>
           <DialogTitle>
-            {(editOpen >= 0 && `Edit ${jobs[editOpen].company} Application`) ||
+            {(selectedJob >= 0 &&
+              `Edit ${jobs[selectedJob]?.company} Application`) ||
               "Add Job"}
           </DialogTitle>
-
           <DialogContent>
             <TextField
               label="Company"
@@ -334,7 +445,7 @@ function Jobs() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  application: e ? `${e.$y}-${e.$M + 1}-${e.$D}` : "",
+                  application: e ? e.format("YYYY-MM-DD") : "",
                 })
               }
               sx={{ mt: "15px", mr: "15px" }}
@@ -349,7 +460,7 @@ function Jobs() {
                   value={value.length > 0 ? dayjs(value) : null}
                   onChange={(e) => {
                     formData.assessment[index] = e
-                      ? `${e.$y}-${e.$M + 1}-${e.$D}`
+                      ? e.format("YYYY-MM-DD")
                       : "";
                     setFormData({ ...formData });
                   }}
@@ -392,9 +503,7 @@ function Jobs() {
                   label={`Interview ${index + 1}`}
                   value={value.length > 0 ? dayjs(value) : null}
                   onChange={(e) => {
-                    formData.interview[index] = e
-                      ? `${e.$y}-${e.$M + 1}-${e.$D}`
-                      : "";
+                    formData.interview[index] = e ? e.format("YYYY-MM-DD") : "";
                     setFormData({ ...formData });
                   }}
                   sx={{ mt: "15px" }}
@@ -438,7 +547,7 @@ function Jobs() {
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  rejection: e ? `${e.$y}-${e.$M + 1}-${e.$D}` : "",
+                  rejection: e ? e.format("YYYY-MM-DD") : "",
                 })
               }
               sx={{ mt: "15px" }}
@@ -450,30 +559,55 @@ function Jobs() {
               type="text"
               margin="dense"
               defaultValue={formData.notes}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  notes: e.target.value,
+                })
+              }
               fullWidth
               multiline
             />
           </DialogContent>
           <DialogActions>
-            <Button type="submit">{editOpen === NEW ? "Add" : "Save"}</Button>
-            <Button onClick={() => setEditOpen(CLOSED)}>Cancel</Button>
+            <Button type="submit">
+              {selectedJob === NEW ? "Add" : "Save"}
+            </Button>
+            <Button onClick={() => setEditOpen(false)}>Cancel</Button>
           </DialogActions>
+          {formMessage.message.length > 0 && (
+            <Alert severity={formMessage.error ? "error" : "info"}>
+              {formMessage.message}
+            </Alert>
+          )}
         </Box>
       </Dialog>
-      <Dialog open={deleteOpen >= 0} onClose={() => setDeleteOpen(CLOSED)}>
+      <Dialog
+        open={deleteOpen}
+        onClose={() => {
+          if (formMessage.error || formMessage.message.length === 0) {
+            setDeleteOpen(false);
+          }
+        }}
+      >
         <DialogTitle>
-          Delete {deleteOpen >= 0 && jobs[deleteOpen].company} Application
+          Delete {selectedJob >= 0 && jobs[selectedJob].company} Application
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete your application to{" "}
-            {deleteOpen >= 0 && jobs[deleteOpen].company}?
+            {selectedJob >= 0 && jobs[selectedJob].company}?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteOpen(CLOSED)}>Yes</Button>
-          <Button onClick={() => setDeleteOpen(CLOSED)}>No</Button>
+          <Button onClick={deleteJob}>Yes</Button>
+          <Button onClick={() => setDeleteOpen(false)}>No</Button>
         </DialogActions>
+        {formMessage.message.length > 0 && (
+          <Alert severity={formMessage.error ? "error" : "info"}>
+            {formMessage.message}
+          </Alert>
+        )}
       </Dialog>
     </LocalizationProvider>
   );

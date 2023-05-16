@@ -10,18 +10,18 @@ const handleNewUser = async (req, res) => {
       .status(400)
       .json({ message: "Username and password are required." });
   // check for duplicate usernames in the db
-  const duplicate = await usersDB.findOne({ where: { username: user } });
-  if (duplicate) {
-    return res.sendStatus(409); //Conflict
-  }
   try {
+    const duplicate = await usersDB.findOne({ where: { username: user } });
+    if (duplicate) {
+      return res.sendStatus(409); // Conflict
+    }
     //encrypt the password
     const hashedPwd = await bcrypt.hash(pwd, 10);
     //store the new user
     await usersDB.create({ username: user, password: hashedPwd });
-    res.status(201).json({ success: `New user ${user} created!` });
+    return res.status(201).json({ success: `New user ${user} created!` });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).send(err);
   }
 };
 

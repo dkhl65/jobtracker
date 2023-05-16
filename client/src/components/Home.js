@@ -10,13 +10,11 @@ import {
   Grid,
   Box,
   Alert,
-  Checkbox,
-  FormControlLabel,
 } from "@mui/material";
 import axios from "../api/axios";
 
 function Home() {
-  const { setAuth, persist, setPersist } = useAuth();
+  const { setAuth } = useAuth();
   const [hasAccount, setHasAccount] = useState(true);
   const [registered, setRegistered] = useState(false);
   const [waiting, setWaiting] = useState(false);
@@ -38,7 +36,11 @@ function Home() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (waiting) {
+      return;
+    }
     setErrMsg("");
+    setRegistered(false);
 
     setUser(user.trim().toLowerCase());
     setConfirmUser(confirmUser.trim().toLowerCase());
@@ -88,8 +90,14 @@ function Home() {
       } else if (err.response?.status === 409) {
         setErrMsg("Please choose another username.");
         setUserErrMsg("Username taken.");
+      } else if (err.response?.status === 500) {
+        setErrMsg(
+          `Internal server error: ${
+            err.response.data?.name || "unknown error"
+          }. Please try again later.`
+        );
       } else {
-        setErrMsg("Failed");
+        setErrMsg(err.message);
       }
     } finally {
       setWaiting(false);
@@ -97,19 +105,21 @@ function Home() {
   };
 
   useEffect(() => {
-    localStorage.setItem("persist", persist);
-  }, [persist]);
-
-  useEffect(() => {
-    setErrMsg("");
-  }, [user, pwd, hasAccount]);
-
-  useEffect(() => {
     refresh()
       .then(() => {
         navigate(from, { replace: true });
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (!err?.response) {
+          setErrMsg("No server response.");
+        } else if (err.response?.status === 500) {
+          setErrMsg(
+            `Internal server error: ${
+              err.data.name || "unknown error"
+            }. Please try again later.`
+          );
+        }
+      })
       .finally(() => setRefreshed(true));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -152,7 +162,7 @@ function Home() {
                 setUserErrMsg("");
                 setConfirmUserErrMsg("");
               }}
-              onBlur={(e) => {
+              onBlur={() => {
                 if (
                   confirmUser.length > 0 &&
                   confirmUser.trim().toLowerCase() !== user.trim().toLowerCase()
@@ -235,24 +245,19 @@ function Home() {
                 }}
               />
             )}
-            {hasAccount && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={persist}
-                    onChange={(e) => setPersist(e.target.checked)}
-                  />
-                }
-                label="Stay logged in."
-              />
-            )}
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <Button
                   fullWidth
                   variant="outlined"
                   sx={{ mt: 3, mb: 2 }}
-                  onClick={(e) => setHasAccount(!hasAccount)}
+                  disabled={waiting}
+                  onClick={() => {
+                    setHasAccount(!hasAccount);
+                    if (errMsg.toLowerCase().indexOf("server") < 0) {
+                      setErrMsg("");
+                    }
+                  }}
                 >
                   {hasAccount ? "Need an account?" : "Have an account?"}
                 </Button>
@@ -263,6 +268,7 @@ function Home() {
                   fullWidth
                   variant="contained"
                   disabled={
+                    waiting ||
                     pwd.length === 0 ||
                     user.length === 0 ||
                     (!hasAccount &&
@@ -278,14 +284,14 @@ function Home() {
             </Grid>
           </Box>
           {errMsg.length > 0 && <Alert severity="error">{errMsg}</Alert>}
-          {waiting && (
-            <Alert severity="info">
-              {hasAccount ? "Signing in..." : "Signing up..."}
-            </Alert>
-          )}
           {registered && (
             <Alert severity="success">
               Your account has been registered! Please sign in.
+            </Alert>
+          )}
+          {waiting && (
+            <Alert severity="info">
+              {hasAccount ? "Signing in..." : "Signing up..."}
             </Alert>
           )}
         </Box>

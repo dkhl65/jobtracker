@@ -7,7 +7,7 @@ import { Typography } from "@mui/material";
 const PersistLogin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const refresh = useRefreshToken();
-  const { auth, persist } = useAuth();
+  const { auth } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -23,16 +23,14 @@ const PersistLogin = () => {
     };
 
     // Avoids unwanted call to verifyRefreshToken
-    !auth?.accessToken && persist ? verifyRefreshToken() : setIsLoading(false);
+    !auth?.accessToken ? verifyRefreshToken() : setIsLoading(false);
 
     return () => (isMounted = false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
-      {!persist ? (
-        <Outlet />
-      ) : isLoading ? (
+      {isLoading ? (
         <Typography component="h1" variant="h1" align="center">
           Loading...
         </Typography>
