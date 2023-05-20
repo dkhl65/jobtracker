@@ -15,6 +15,10 @@ const Job = sequelize.define(
     location: {
       type: DataTypes.STRING,
     },
+    remote: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
     link: {
       type: DataTypes.STRING,
     },
@@ -31,7 +35,7 @@ const Job = sequelize.define(
       type: DataTypes.STRING,
     },
     notes: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
     },
   },
   {

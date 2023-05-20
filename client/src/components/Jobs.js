@@ -6,6 +6,8 @@ import {
   Toolbar,
   Box,
   TextField,
+  Checkbox,
+  FormControlLabel,
   Alert,
   Paper,
   Table,
@@ -40,6 +42,7 @@ const blankForm = {
   company: "",
   location: "",
   link: "",
+  remote: false,
   application: "",
   assessment: [""],
   interview: [""],
@@ -62,8 +65,8 @@ function Jobs() {
   const [orderBy, setOrderBy] = useState("application");
   const visibleRows = useMemo(() => {
     jobs.sort((x, y) => {
-      const a = x[orderBy];
-      const b = y[orderBy];
+      const a = x[orderBy].toLowerCase();
+      const b = y[orderBy].toLowerCase();
       if ((a < b && order === "asc") || (a > b && order === "desc")) {
         return -1;
       }
@@ -109,9 +112,9 @@ function Jobs() {
 
   const openEditForm = (jobNumber) => {
     const newForm = {
-      ...jobs[jobNumber],
-      assessment: jobs[jobNumber].assessment.split(","),
-      interview: jobs[jobNumber].interview.split(","),
+      ...visibleRows[jobNumber],
+      assessment: visibleRows[jobNumber].assessment.split(","),
+      interview: visibleRows[jobNumber].interview.split(","),
     };
     setFormData(newForm);
     setEditOpen(true);
@@ -125,8 +128,15 @@ function Jobs() {
     }
     const jobApp = {
       ...formData,
-      assessment: formData.assessment.filter(Boolean).join(","),
-      interview: formData.interview.filter(Boolean).join(","),
+      company: formData.company.trim(),
+      location: formData.location.trim(),
+      link: formData.link.trim(),
+      assessment: formData.assessment
+        .filter((date) => date.length > 0 && date.indexOf("Invalid Date") < 0)
+        .join(","),
+      interview: formData.interview
+        .filter((date) => date.length > 0 && date.indexOf("Invalid Date") < 0)
+        .join(","),
       notes: formData.notes.trim(),
     };
     try {
@@ -224,9 +234,9 @@ function Jobs() {
             variant="contained"
             sx={{ ml: "10px" }}
             onClick={() => {
-              setFormData(blankForm);
-              setEditOpen(true);
+              setFormData(JSON.parse(JSON.stringify(blankForm)));
               setSelectedJob(NEW);
+              setEditOpen(true);
             }}
           >
             Add Job
@@ -303,13 +313,18 @@ function Jobs() {
                   </TableCell>
                   <TableCell>
                     {row.location ? (
-                      <a
-                        href={`https://maps.google.com/?q=${row.location}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {row.location}
-                      </a>
+                      <>
+                        <a
+                          href={`https://maps.google.com/?q=${row.location}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {row.location}
+                        </a>
+                        {row.remote && " (Remote)"}
+                      </>
+                    ) : row.remote ? (
+                      "Remote"
                     ) : (
                       "Unknown"
                     )}
@@ -327,9 +342,9 @@ function Jobs() {
                   </TableCell>
                   <TableCell>{row.rejection || "None"}</TableCell>
                   <TableCell>
-                    {row.notes.split("\n").map((line, index) => {
-                      return <Box key={index}>{line}</Box>;
-                    })}
+                    {row.notes.split("\n").map((line, index) => (
+                      <Box key={index}>{line || <br />}</Box>
+                    ))}
                   </TableCell>
                   <TableCell width="120px">
                     <Tooltip title="Edit">
@@ -409,6 +424,7 @@ function Jobs() {
               onChange={(e) =>
                 setFormData({ ...formData, company: e.target.value })
               }
+              inputProps={{ maxLength: 255 }}
               required
             />
             <TextField
@@ -421,17 +437,30 @@ function Jobs() {
               onChange={(e) =>
                 setFormData({ ...formData, location: e.target.value })
               }
+              inputProps={{ maxLength: 255 }}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.remote}
+                  onChange={(e) =>
+                    setFormData({ ...formData, remote: e.target.checked })
+                  }
+                />
+              }
+              label="Remote"
             />
             <TextField
               label="Link to Job Post"
               fullWidth
               variant="standard"
-              type="text"
+              type="url"
               margin="dense"
               value={formData.link}
               onChange={(e) =>
                 setFormData({ ...formData, link: e.target.value })
               }
+              inputProps={{ maxLength: 255 }}
             />
             <DatePicker
               format="YYYY-MM-DD"
@@ -565,6 +594,7 @@ function Jobs() {
                   notes: e.target.value,
                 })
               }
+              inputProps={{ maxLength: 1000 }}
               fullWidth
               multiline
             />

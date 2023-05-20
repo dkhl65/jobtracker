@@ -15,9 +15,9 @@ const handleNewUser = async (req, res) => {
     if (duplicate) {
       return res.sendStatus(409); // Conflict
     }
-    //encrypt the password
+    // encrypt the password
     const hashedPwd = await bcrypt.hash(pwd, 10);
-    //store the new user
+    // store the new user
     await usersDB.create({ username: user, password: hashedPwd });
     return res.status(201).json({ success: `New user ${user} created!` });
   } catch (err) {
