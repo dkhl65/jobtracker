@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useReducer } from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import {
   Container,
@@ -52,6 +52,7 @@ const blankForm = {
 
 function Jobs() {
   const axiosPrivate = useAxiosPrivate();
+  const [, update] = useReducer((x) => x + 1, 0);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -59,7 +60,7 @@ function Jobs() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(NEW);
-  const [formData, setFormData] = useState(blankForm);
+  const formData = useRef(JSON.parse(JSON.stringify(blankForm)));
   const [formMessage, setFormMessage] = useState({ error: false, message: "" });
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("application");
@@ -78,7 +79,7 @@ function Jobs() {
     return jobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
   }, [jobs, page, rowsPerPage, order, orderBy]);
 
-  const reload = () => {
+  const reloadJobs = () => {
     setLoadingJobs(true);
     axiosPrivate
       .get("/jobs")
@@ -116,7 +117,7 @@ function Jobs() {
       assessment: visibleRows[jobNumber].assessment.split(","),
       interview: visibleRows[jobNumber].interview.split(","),
     };
-    setFormData(newForm);
+    formData.current = newForm;
     setEditOpen(true);
     setSelectedJob(jobNumber);
   };
@@ -127,17 +128,17 @@ function Jobs() {
       return;
     }
     const jobApp = {
-      ...formData,
-      company: formData.company.trim(),
-      location: formData.location.trim(),
-      link: formData.link.trim(),
-      assessment: formData.assessment
+      ...formData.current,
+      company: formData.current.company.trim(),
+      location: formData.current.location.trim(),
+      link: formData.current.link.trim(),
+      assessment: formData.current.assessment
         .filter((date) => date.length > 0 && date.indexOf("Invalid Date") < 0)
         .join(","),
-      interview: formData.interview
+      interview: formData.current.interview
         .filter((date) => date.length > 0 && date.indexOf("Invalid Date") < 0)
         .join(","),
-      notes: formData.notes.trim(),
+      notes: formData.current.notes.trim(),
     };
     try {
       if (selectedJob === NEW) {
@@ -148,7 +149,7 @@ function Jobs() {
         await axiosPrivate.put("/jobs", jobApp);
       }
       setEditOpen(false);
-      reload();
+      reloadJobs();
     } catch (err) {
       if (!err?.response) {
         setFormMessage({ error: true, message: "No server response." });
@@ -179,7 +180,7 @@ function Jobs() {
       .then(() => {
         setDeleteOpen(false);
         setSelectedJob(NEW);
-        reload();
+        reloadJobs();
       })
       .catch((err) => {
         if (!err?.response) {
@@ -205,7 +206,7 @@ function Jobs() {
   }, [editOpen, deleteOpen]);
 
   useEffect(() => {
-    reload();
+    reloadJobs();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -217,7 +218,7 @@ function Jobs() {
             <TextField placeholder="Search…" />
           </Box>
           <TablePagination
-            rowsPerPageOptions={[10, 25, 50, 100]}
+            rowsPerPageOptions={[10, 25, 50, 100, 1000]}
             component="div"
             count={jobs.length}
             rowsPerPage={rowsPerPage}
@@ -234,7 +235,7 @@ function Jobs() {
             variant="contained"
             sx={{ ml: "10px" }}
             onClick={() => {
-              setFormData(JSON.parse(JSON.stringify(blankForm)));
+              formData.current = JSON.parse(JSON.stringify(blankForm));
               setSelectedJob(NEW);
               setEditOpen(true);
             }}
@@ -420,10 +421,8 @@ function Jobs() {
               variant="standard"
               type="text"
               margin="dense"
-              value={formData.company}
-              onChange={(e) =>
-                setFormData({ ...formData, company: e.target.value })
-              }
+              defaultValue={formData.current.company}
+              onChange={(e) => (formData.current.company = e.target.value)}
               inputProps={{ maxLength: 255 }}
               required
             />
@@ -433,19 +432,18 @@ function Jobs() {
               variant="standard"
               type="text"
               margin="dense"
-              value={formData.location}
-              onChange={(e) =>
-                setFormData({ ...formData, location: e.target.value })
-              }
+              defaultValue={formData.current.location}
+              onChange={(e) => (formData.current.location = e.target.value)}
               inputProps={{ maxLength: 255 }}
             />
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.remote}
-                  onChange={(e) =>
-                    setFormData({ ...formData, remote: e.target.checked })
-                  }
+                  checked={formData.current.remote}
+                  onChange={(e) => {
+                    formData.current.remote = e.target.checked;
+                    update();
+                  }}
                 />
               }
               label="Remote"
@@ -456,65 +454,59 @@ function Jobs() {
               variant="standard"
               type="url"
               margin="dense"
-              value={formData.link}
-              onChange={(e) =>
-                setFormData({ ...formData, link: e.target.value })
-              }
+              defaultValue={formData.current.link}
+              onChange={(e) => (formData.current.link = e.target.value)}
               inputProps={{ maxLength: 255 }}
             />
             <DatePicker
               format="YYYY-MM-DD"
               margin="dense"
               label="Application Date"
-              value={
-                formData.application.length > 0
-                  ? dayjs(formData.application)
+              defaultValue={
+                formData.current.application.length > 0
+                  ? dayjs(formData.current.application)
                   : null
               }
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  application: e ? e.format("YYYY-MM-DD") : "",
-                })
+                (formData.current.application = e ? e.format("YYYY-MM-DD") : "")
               }
               sx={{ mt: "15px", mr: "15px" }}
             />
             <br />
-            {formData.assessment.map((value, index) => (
+            {formData.current.assessment.map((value, index) => (
               <Box key={index}>
                 <DatePicker
                   format="YYYY-MM-DD"
                   margin="dense"
                   label={`Technical Assessment ${index + 1}`}
-                  value={value.length > 0 ? dayjs(value) : null}
-                  onChange={(e) => {
-                    formData.assessment[index] = e
+                  defaultValue={value.length > 0 ? dayjs(value) : null}
+                  onChange={(e) =>
+                    (formData.current.assessment[index] = e
                       ? e.format("YYYY-MM-DD")
-                      : "";
-                    setFormData({ ...formData });
-                  }}
+                      : "")
+                  }
                   sx={{ mt: "15px" }}
                 />
-                {formData.assessment.length > 1 && (
+                {formData.current.assessment.length > 1 && (
                   <Tooltip title="Remove technical assessment date">
                     <IconButton
                       sx={{ mt: "22px" }}
                       onClick={() => {
-                        formData.assessment.splice(index, 1);
-                        setFormData({ ...formData });
+                        formData.current.assessment.splice(index, 1);
+                        update();
                       }}
                     >
                       <RemoveIcon />
                     </IconButton>
                   </Tooltip>
                 )}
-                {Number(index) === formData.assessment.length - 1 && (
+                {Number(index) === formData.current.assessment.length - 1 && (
                   <Tooltip title="Add another technical assessment date">
                     <IconButton
                       sx={{ mt: "22px" }}
                       onClick={() => {
-                        formData.assessment.push("");
-                        setFormData({ ...formData });
+                        formData.current.assessment.push("");
+                        update();
                       }}
                     >
                       <AddIcon />
@@ -524,39 +516,40 @@ function Jobs() {
                 <br />
               </Box>
             ))}
-            {formData.interview.map((value, index) => (
+            {formData.current.interview.map((value, index) => (
               <Box key={index}>
                 <DatePicker
                   format="YYYY-MM-DD"
                   margin="dense"
                   label={`Interview ${index + 1}`}
-                  value={value.length > 0 ? dayjs(value) : null}
-                  onChange={(e) => {
-                    formData.interview[index] = e ? e.format("YYYY-MM-DD") : "";
-                    setFormData({ ...formData });
-                  }}
+                  defaultValue={value.length > 0 ? dayjs(value) : null}
+                  onChange={(e) =>
+                    (formData.current.interview[index] = e
+                      ? e.format("YYYY-MM-DD")
+                      : "")
+                  }
                   sx={{ mt: "15px" }}
                 />
-                {formData.interview.length > 1 && (
+                {formData.current.interview.length > 1 && (
                   <Tooltip title="Remove interview date">
                     <IconButton
                       sx={{ mt: "22px" }}
                       onClick={() => {
-                        formData.interview.splice(index, 1);
-                        setFormData({ ...formData });
+                        formData.current.interview.splice(index, 1);
+                        update();
                       }}
                     >
                       <RemoveIcon />
                     </IconButton>
                   </Tooltip>
                 )}
-                {Number(index) === formData.interview.length - 1 && (
+                {Number(index) === formData.current.interview.length - 1 && (
                   <Tooltip title="Add another interview date">
                     <IconButton
                       sx={{ mt: "22px" }}
                       onClick={() => {
-                        formData.interview.push("");
-                        setFormData({ ...formData });
+                        formData.current.interview.push("");
+                        update();
                       }}
                     >
                       <AddIcon />
@@ -570,14 +563,13 @@ function Jobs() {
               format="YYYY-MM-DD"
               margin="dense"
               label="Rejection Date"
-              value={
-                formData.rejection.length > 0 ? dayjs(formData.rejection) : null
+              defaultValue={
+                formData.current.rejection.length > 0
+                  ? dayjs(formData.current.rejection)
+                  : null
               }
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  rejection: e ? e.format("YYYY-MM-DD") : "",
-                })
+                (formData.current.rejection = e ? e.format("YYYY-MM-DD") : "")
               }
               sx={{ mt: "15px" }}
             />
@@ -587,13 +579,8 @@ function Jobs() {
               variant="standard"
               type="text"
               margin="dense"
-              defaultValue={formData.notes}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  notes: e.target.value,
-                })
-              }
+              defaultValue={formData.current.notes}
+              onChange={(e) => (formData.current.notes = e.target.value)}
               inputProps={{ maxLength: 1000 }}
               fullWidth
               multiline
