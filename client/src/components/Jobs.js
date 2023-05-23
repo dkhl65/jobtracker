@@ -15,17 +15,11 @@ import {
   TableBody,
   TableContainer,
   TableSortLabel,
-  IconButton,
   TablePagination,
-  Tooltip,
 } from "@mui/material";
-import LaunchIcon from "@mui/icons-material/Launch";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
 import JobDialogs from "./JobDialogs";
 import NavBar from "./NavBar";
-
-const NEW = -1;
+import JobRow from "./JobRow";
 
 function Jobs() {
   const axiosPrivate = useAxiosPrivate();
@@ -33,10 +27,6 @@ function Jobs() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [jobs, setJobs] = useState([]);
-  const [dialogAction, setDialogAction] = useState({
-    action: "none",
-    jobNumber: NEW,
-  });
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("application");
   const dialogRef = useRef();
@@ -57,7 +47,6 @@ function Jobs() {
 
   const reloadJobs = () => {
     setLoadingJobs(true);
-    setDialogAction({ action: "none", jobNumber: NEW });
     axiosPrivate
       .get("/jobs")
       .then((res) => {
@@ -92,16 +81,6 @@ function Jobs() {
     reloadJobs();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (dialogAction.action === "new") {
-      dialogRef.current.openNewForm();
-    } else if (dialogAction.action === "edit") {
-      dialogRef.current.openEditForm();
-    } else if (dialogAction.action === "delete") {
-      dialogRef.current.openDeleteForm();
-    }
-  }, [dialogAction]);
-
   return (
     <>
       <NavBar />
@@ -127,7 +106,7 @@ function Jobs() {
           <Button
             variant="contained"
             sx={{ ml: "10px" }}
-            onClick={() => setDialogAction({ action: "new", jobNumber: NEW })}
+            onClick={() => dialogRef.current.openNewForm()}
           >
             Add Job
           </Button>
@@ -191,86 +170,7 @@ function Jobs() {
             </TableHead>
             <TableBody>
               {visibleRows.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    <a
-                      href={`https://www.google.com/search?q=${row.company}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {row.company}
-                    </a>
-                  </TableCell>
-                  <TableCell>
-                    {row.location ? (
-                      <>
-                        <a
-                          href={`https://maps.google.com/?q=${row.location}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {row.location}
-                        </a>
-                        {row.remote && " (Remote)"}
-                      </>
-                    ) : row.remote ? (
-                      "Remote"
-                    ) : (
-                      "Unknown"
-                    )}
-                  </TableCell>
-                  <TableCell>{row.application || "Unknown"}</TableCell>
-                  <TableCell>
-                    {row.assessment.split(",").map((date, index) => (
-                      <Box key={index}>{date || "None"}</Box>
-                    ))}
-                  </TableCell>
-                  <TableCell>
-                    {row.interview.split(",").map((date, index) => (
-                      <Box key={index}>{date || "None"}</Box>
-                    ))}
-                  </TableCell>
-                  <TableCell>{row.rejection || "None"}</TableCell>
-                  <TableCell>
-                    {row.notes.split("\n").map((line, index) => (
-                      <Box key={index}>{line || <br />}</Box>
-                    ))}
-                  </TableCell>
-                  <TableCell width="120px">
-                    <Tooltip title="Edit">
-                      <IconButton
-                        onClick={() =>
-                          setDialogAction({ action: "edit", jobNumber: index })
-                        }
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        onClick={() =>
-                          setDialogAction({
-                            action: "delete",
-                            jobNumber: index,
-                          })
-                        }
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {row.link && (
-                      <Tooltip title="View job posting">
-                        <IconButton
-                          href={row.link}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <LaunchIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </TableCell>
-                </TableRow>
+                <JobRow key={index} job={row} reloadJobs={reloadJobs} />
               ))}
             </TableBody>
           </Table>
@@ -295,11 +195,7 @@ function Jobs() {
           )}
         </Box>
       </Container>
-      <JobDialogs
-        job={visibleRows[dialogAction.jobNumber]}
-        ref={dialogRef}
-        reloadJobs={reloadJobs}
-      />
+      <JobDialogs ref={dialogRef} reloadJobs={reloadJobs} />
     </>
   );
 }
