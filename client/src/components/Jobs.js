@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo, useReducer } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useReducer,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import {
   Container,
@@ -50,77 +58,39 @@ const blankForm = {
   notes: "",
 };
 
-function Jobs() {
-  const axiosPrivate = useAxiosPrivate();
+const Dialogs = forwardRef((props, ref) => {
+  const { job, reloadJobs, axiosPrivate } = props;
+  const formData = useRef(JSON.parse(JSON.stringify(blankForm)));
   const [, update] = useReducer((x) => x + 1, 0);
-  const [loadingJobs, setLoadingJobs] = useState(true);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [jobs, setJobs] = useState([]);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [selectedJob, setSelectedJob] = useState(NEW);
-  const formData = useRef(JSON.parse(JSON.stringify(blankForm)));
   const [formMessage, setFormMessage] = useState({ error: false, message: "" });
-  const [order, setOrder] = useState("desc");
-  const [orderBy, setOrderBy] = useState("application");
-  const visibleRows = useMemo(() => {
-    jobs.sort((x, y) => {
-      const a = x[orderBy].toLowerCase();
-      const b = y[orderBy].toLowerCase();
-      if ((a < b && order === "asc") || (a > b && order === "desc")) {
-        return -1;
-      }
-      if ((a > b && order === "asc") || (a < b && order === "desc")) {
-        return 1;
-      }
-      return 0;
-    });
-    return jobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [jobs, page, rowsPerPage, order, orderBy]);
+  const [newJob, setNewJob] = useState(true);
 
-  const reloadJobs = () => {
-    setLoadingJobs(true);
-    axiosPrivate
-      .get("/jobs")
-      .then((res) => {
-        setJobs(res.data);
-        setLoadingJobs(false);
-      })
-      .catch((err) => {
-        if (!err?.response) {
-          setLoadingJobs("No server response.");
-        } else if (err.response?.status === 500) {
-          setLoadingJobs(
-            `Internal server error: ${
-              err.response.data?.name || "unknown error"
-            }. Please try again later.`
-          );
-        } else {
-          setLoadingJobs(err.message);
-        }
-      });
-  };
+  useImperativeHandle(ref, () => ({
+    openEditForm() {
+      const newForm = {
+        ...job,
+        assessment: job.assessment.split(","),
+        interview: job.interview.split(","),
+      };
+      formData.current = newForm;
+      setNewJob(false);
+      setEditOpen(true);
+    },
+    openNewForm() {
+      formData.current = JSON.parse(JSON.stringify(blankForm));
+      setNewJob(true);
+      setEditOpen(true);
+    },
+    openDeleteForm() {
+      setDeleteOpen(true);
+    },
+  }));
 
-  const changeOrder = (column, defaultOrder = "desc") => {
-    if (orderBy === column && order === defaultOrder) {
-      setOrder(defaultOrder === "desc" ? "asc" : "desc");
-    } else {
-      setOrder(defaultOrder);
-    }
-    setOrderBy(column);
-  };
-
-  const openEditForm = (jobNumber) => {
-    const newForm = {
-      ...visibleRows[jobNumber],
-      assessment: visibleRows[jobNumber].assessment.split(","),
-      interview: visibleRows[jobNumber].interview.split(","),
-    };
-    formData.current = newForm;
-    setEditOpen(true);
-    setSelectedJob(jobNumber);
-  };
+  useEffect(() => {
+    setFormMessage({ error: false, message: "" });
+  }, [editOpen, deleteOpen]);
 
   const saveJob = async (e) => {
     e.preventDefault();
@@ -141,7 +111,7 @@ function Jobs() {
       notes: formData.current.notes.trim(),
     };
     try {
-      if (selectedJob === NEW) {
+      if (newJob) {
         setFormMessage({ error: false, message: "Adding job application..." });
         await axiosPrivate.post("/jobs", jobApp);
       } else {
@@ -171,15 +141,14 @@ function Jobs() {
 
   const deleteJob = (e) => {
     e.preventDefault();
-    if (formMessage.message.length > 0 || !jobs[selectedJob]?.id) {
+    if (formMessage.message.length > 0 || !job?.id) {
       return;
     }
     setFormMessage({ error: false, message: "Deleting job application..." });
     axiosPrivate
-      .delete("/jobs", { data: { id: jobs[selectedJob].id } })
+      .delete("/jobs", { data: { id: job.id } })
       .then(() => {
         setDeleteOpen(false);
-        setSelectedJob(NEW);
         reloadJobs();
       })
       .catch((err) => {
@@ -201,205 +170,8 @@ function Jobs() {
       });
   };
 
-  useEffect(() => {
-    setFormMessage({ error: false, message: "" });
-  }, [editOpen, deleteOpen]);
-
-  useEffect(() => {
-    reloadJobs();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <NavBar />
-      <Container maxWidth="lg" sx={{ mt: "10px", mb: "10px" }}>
-        <Toolbar>
-          <Box sx={{ flexGrow: 1, mb: "10px" }}>
-            <TextField placeholder="Search…" />
-          </Box>
-          <TablePagination
-            rowsPerPageOptions={[10, 25, 50, 100, 1000]}
-            component="div"
-            count={jobs.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={(e, newPage) => setPage(newPage)}
-            onRowsPerPageChange={(e) => {
-              setRowsPerPage(+e.target.value);
-              setPage(0);
-            }}
-            showFirstButton
-            showLastButton
-          />
-          <Button
-            variant="contained"
-            sx={{ ml: "10px" }}
-            onClick={() => {
-              formData.current = JSON.parse(JSON.stringify(blankForm));
-              setSelectedJob(NEW);
-              setEditOpen(true);
-            }}
-          >
-            Add Job
-          </Button>
-        </Toolbar>
-        <TableContainer
-          component={Paper}
-          sx={{ backgroundColor: "ghostwhite" }}
-        >
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>
-                  <TableSortLabel
-                    active={orderBy === "company"}
-                    direction={orderBy === "company" ? order : "asc"}
-                    onClick={() => changeOrder("company", "asc")}
-                  >
-                    Company
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>Location</TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={orderBy === "application"}
-                    direction={orderBy === "application" ? order : "desc"}
-                    onClick={() => changeOrder("application")}
-                  >
-                    Application Date
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={orderBy === "assessment"}
-                    direction={orderBy === "assessment" ? order : "desc"}
-                    onClick={() => changeOrder("assessment")}
-                  >
-                    Technical Assessment Dates
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={orderBy === "interview"}
-                    direction={orderBy === "interview" ? order : "desc"}
-                    onClick={() => changeOrder("interview")}
-                  >
-                    Interview Dates
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={orderBy === "rejection"}
-                    direction={orderBy === "rejection" ? order : "desc"}
-                    onClick={() => changeOrder("rejection")}
-                  >
-                    Rejection Date
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>Notes</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {visibleRows.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    <a
-                      href={`https://www.google.com/search?q=${row.company}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {row.company}
-                    </a>
-                  </TableCell>
-                  <TableCell>
-                    {row.location ? (
-                      <>
-                        <a
-                          href={`https://maps.google.com/?q=${row.location}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {row.location}
-                        </a>
-                        {row.remote && " (Remote)"}
-                      </>
-                    ) : row.remote ? (
-                      "Remote"
-                    ) : (
-                      "Unknown"
-                    )}
-                  </TableCell>
-                  <TableCell>{row.application || "Unknown"}</TableCell>
-                  <TableCell>
-                    {row.assessment.split(",").map((date, index) => (
-                      <Box key={index}>{date || "None"}</Box>
-                    ))}
-                  </TableCell>
-                  <TableCell>
-                    {row.interview.split(",").map((date, index) => (
-                      <Box key={index}>{date || "None"}</Box>
-                    ))}
-                  </TableCell>
-                  <TableCell>{row.rejection || "None"}</TableCell>
-                  <TableCell>
-                    {row.notes.split("\n").map((line, index) => (
-                      <Box key={index}>{line || <br />}</Box>
-                    ))}
-                  </TableCell>
-                  <TableCell width="120px">
-                    <Tooltip title="Edit">
-                      <IconButton onClick={() => openEditForm(index)}>
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton
-                        onClick={() => {
-                          setSelectedJob(index);
-                          setDeleteOpen(true);
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {row.link && (
-                      <Tooltip title="View job posting">
-                        <IconButton
-                          href={row.link}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <LaunchIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <Box
-          sx={{
-            mt: 2,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          {loadingJobs === true && (
-            <Alert severity="info">
-              Loading your list of job applications...
-            </Alert>
-          )}
-          {loadingJobs.length && (
-            <Alert severity="error">
-              Could not load your job applications. {loadingJobs}
-            </Alert>
-          )}
-        </Box>
-      </Container>
+    <>
       <Dialog
         open={editOpen}
         onClose={() => {
@@ -410,9 +182,7 @@ function Jobs() {
       >
         <Box component="form" onSubmit={saveJob}>
           <DialogTitle>
-            {(selectedJob >= 0 &&
-              `Edit ${jobs[selectedJob]?.company} Application`) ||
-              "Add Job"}
+            {(!newJob && `Edit ${job?.company} Application`) || "Add Job"}
           </DialogTitle>
           <DialogContent>
             <TextField
@@ -587,9 +357,7 @@ function Jobs() {
             />
           </DialogContent>
           <DialogActions>
-            <Button type="submit">
-              {selectedJob === NEW ? "Add" : "Save"}
-            </Button>
+            <Button type="submit">{newJob ? "Add" : "Save"}</Button>
             <Button onClick={() => setEditOpen(false)}>Cancel</Button>
           </DialogActions>
           {formMessage.message.length > 0 && (
@@ -607,13 +375,10 @@ function Jobs() {
           }
         }}
       >
-        <DialogTitle>
-          Delete {selectedJob >= 0 && jobs[selectedJob].company} Application
-        </DialogTitle>
+        <DialogTitle>Delete {job?.company} Application</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete your application to{" "}
-            {selectedJob >= 0 && jobs[selectedJob].company}?
+            Are you sure you want to delete your application to {job?.company}?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -626,6 +391,284 @@ function Jobs() {
           </Alert>
         )}
       </Dialog>
+    </>
+  );
+});
+
+function Jobs() {
+  const axiosPrivate = useAxiosPrivate();
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [jobs, setJobs] = useState([]);
+  const [dialogAction, setDialogAction] = useState({
+    action: "none",
+    jobNumber: NEW,
+  });
+  const [order, setOrder] = useState("desc");
+  const [orderBy, setOrderBy] = useState("application");
+  const dialogRef = useRef();
+  const visibleRows = useMemo(() => {
+    jobs.sort((x, y) => {
+      const a = x[orderBy].toLowerCase();
+      const b = y[orderBy].toLowerCase();
+      if ((a < b && order === "asc") || (a > b && order === "desc")) {
+        return -1;
+      }
+      if ((a > b && order === "asc") || (a < b && order === "desc")) {
+        return 1;
+      }
+      return 0;
+    });
+    return jobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [jobs, page, rowsPerPage, order, orderBy]);
+
+  const reloadJobs = () => {
+    setLoadingJobs(true);
+    setDialogAction({ action: "none", jobNumber: NEW });
+    axiosPrivate
+      .get("/jobs")
+      .then((res) => {
+        setJobs(res.data);
+        setLoadingJobs(false);
+      })
+      .catch((err) => {
+        if (!err?.response) {
+          setLoadingJobs("No server response.");
+        } else if (err.response?.status === 500) {
+          setLoadingJobs(
+            `Internal server error: ${
+              err.response.data?.name || "unknown error"
+            }. Please try again later.`
+          );
+        } else {
+          setLoadingJobs(err.message);
+        }
+      });
+  };
+
+  const changeOrder = (column, defaultOrder = "desc") => {
+    if (orderBy === column && order === defaultOrder) {
+      setOrder(defaultOrder === "desc" ? "asc" : "desc");
+    } else {
+      setOrder(defaultOrder);
+    }
+    setOrderBy(column);
+  };
+
+  useEffect(() => {
+    reloadJobs();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (dialogAction.action === "new") {
+      dialogRef.current.openNewForm();
+    } else if (dialogAction.action === "edit") {
+      dialogRef.current.openEditForm();
+    } else if (dialogAction.action === "delete") {
+      dialogRef.current.openDeleteForm();
+    }
+  }, [dialogAction]);
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <NavBar />
+      <Container maxWidth="lg" sx={{ mt: "10px", mb: "10px" }}>
+        <Toolbar>
+          <Box sx={{ flexGrow: 1, mb: "10px" }}>
+            <TextField placeholder="Search…" />
+          </Box>
+          <TablePagination
+            rowsPerPageOptions={[10, 25, 50, 100, { label: "All", value: -1 }]}
+            component="div"
+            count={jobs.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={(e, newPage) => setPage(newPage)}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(+e.target.value);
+              setPage(0);
+            }}
+            showFirstButton
+            showLastButton
+          />
+          <Button
+            variant="contained"
+            sx={{ ml: "10px" }}
+            onClick={() => setDialogAction({ action: "new", jobNumber: NEW })}
+          >
+            Add Job
+          </Button>
+        </Toolbar>
+        <TableContainer
+          component={Paper}
+          sx={{ backgroundColor: "ghostwhite" }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "company"}
+                    direction={orderBy === "company" ? order : "asc"}
+                    onClick={() => changeOrder("company", "asc")}
+                  >
+                    Company
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Location</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "application"}
+                    direction={orderBy === "application" ? order : "desc"}
+                    onClick={() => changeOrder("application")}
+                  >
+                    Application Date
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "assessment"}
+                    direction={orderBy === "assessment" ? order : "desc"}
+                    onClick={() => changeOrder("assessment")}
+                  >
+                    Technical Assessment Dates
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "interview"}
+                    direction={orderBy === "interview" ? order : "desc"}
+                    onClick={() => changeOrder("interview")}
+                  >
+                    Interview Dates
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={orderBy === "rejection"}
+                    direction={orderBy === "rejection" ? order : "desc"}
+                    onClick={() => changeOrder("rejection")}
+                  >
+                    Rejection Date
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>Notes</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {visibleRows.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <a
+                      href={`https://www.google.com/search?q=${row.company}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {row.company}
+                    </a>
+                  </TableCell>
+                  <TableCell>
+                    {row.location ? (
+                      <>
+                        <a
+                          href={`https://maps.google.com/?q=${row.location}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {row.location}
+                        </a>
+                        {row.remote && " (Remote)"}
+                      </>
+                    ) : row.remote ? (
+                      "Remote"
+                    ) : (
+                      "Unknown"
+                    )}
+                  </TableCell>
+                  <TableCell>{row.application || "Unknown"}</TableCell>
+                  <TableCell>
+                    {row.assessment.split(",").map((date, index) => (
+                      <Box key={index}>{date || "None"}</Box>
+                    ))}
+                  </TableCell>
+                  <TableCell>
+                    {row.interview.split(",").map((date, index) => (
+                      <Box key={index}>{date || "None"}</Box>
+                    ))}
+                  </TableCell>
+                  <TableCell>{row.rejection || "None"}</TableCell>
+                  <TableCell>
+                    {row.notes.split("\n").map((line, index) => (
+                      <Box key={index}>{line || <br />}</Box>
+                    ))}
+                  </TableCell>
+                  <TableCell width="120px">
+                    <Tooltip title="Edit">
+                      <IconButton
+                        onClick={() =>
+                          setDialogAction({ action: "edit", jobNumber: index })
+                        }
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        onClick={() =>
+                          setDialogAction({
+                            action: "delete",
+                            jobNumber: index,
+                          })
+                        }
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                    {row.link && (
+                      <Tooltip title="View job posting">
+                        <IconButton
+                          href={row.link}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <LaunchIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <Box
+          sx={{
+            mt: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          {loadingJobs === true && (
+            <Alert severity="info">
+              Loading your list of job applications...
+            </Alert>
+          )}
+          {loadingJobs.length && (
+            <Alert severity="error">
+              Could not load your job applications. {loadingJobs}
+            </Alert>
+          )}
+        </Box>
+      </Container>
+      <Dialogs
+        job={visibleRows[dialogAction.jobNumber]}
+        ref={dialogRef}
+        reloadJobs={reloadJobs}
+        axiosPrivate={axiosPrivate}
+      />
     </LocalizationProvider>
   );
 }
