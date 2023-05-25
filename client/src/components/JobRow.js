@@ -5,8 +5,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import JobDialogs from "./JobDialogs";
 
-function JobRow(props) {
-  const { job, reloadJobs } = props;
+function JobRow({ job, reloadJobs }) {
   const dialogRef = useRef();
 
   return (

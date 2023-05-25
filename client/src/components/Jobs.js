@@ -3,6 +3,8 @@ import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import {
   Container,
   Button,
+  IconButton,
+  Tooltip,
   Toolbar,
   Box,
   TextField,
@@ -17,6 +19,7 @@ import {
   TableSortLabel,
   TablePagination,
 } from "@mui/material";
+import ClearIcon from "@mui/icons-material/Clear";
 import JobDialogs from "./JobDialogs";
 import NavBar from "./NavBar";
 import JobRow from "./JobRow";
@@ -27,8 +30,10 @@ function Jobs() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [jobs, setJobs] = useState([]);
+  const [totalRows, setTotalRows] = useState(0);
   const [order, setOrder] = useState("desc");
   const [orderBy, setOrderBy] = useState("application");
+  const [search, setSearch] = useState("");
   const dialogRef = useRef();
   const visibleRows = useMemo(() => {
     jobs.sort((x, y) => {
@@ -42,8 +47,33 @@ function Jobs() {
       }
       return 0;
     });
-    return jobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [jobs, page, rowsPerPage, order, orderBy]);
+    if (search.length === 0) {
+      setTotalRows(jobs.length);
+      return rowsPerPage > 0
+        ? jobs.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+        : jobs;
+    } else {
+      const searchRows = [];
+      jobs.forEach((row) => {
+        for (const field in row) {
+          if (
+            typeof row[field] === "string" &&
+            field !== "username" &&
+            field !== "link" &&
+            (row[field].toLowerCase().indexOf(search) >= 0 ||
+              ("remote".indexOf(search) >= 0 && row.remote))
+          ) {
+            searchRows.push(row);
+            break;
+          }
+        }
+      });
+      setTotalRows(searchRows.length);
+      return rowsPerPage > 0
+        ? searchRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+        : searchRows;
+    }
+  }, [jobs, page, rowsPerPage, order, orderBy, search]);
 
   const reloadJobs = () => {
     setLoadingJobs(true);
@@ -87,12 +117,39 @@ function Jobs() {
       <Container maxWidth="lg" sx={{ mt: "10px", mb: "10px" }}>
         <Toolbar>
           <Box sx={{ flexGrow: 1, mb: "10px" }}>
-            <TextField placeholder="Search…" />
+            <TextField
+              placeholder="Search…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value.toLowerCase());
+                setPage(0);
+              }}
+              InputProps={{
+                endAdornment: (
+                  <>
+                    {search ? (
+                      <Tooltip title="Clear search">
+                        <IconButton
+                          onClick={() => {
+                            setSearch("");
+                            setPage(0);
+                          }}
+                        >
+                          <ClearIcon />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      ""
+                    )}
+                  </>
+                ),
+              }}
+            />
           </Box>
           <TablePagination
             rowsPerPageOptions={[10, 25, 50, 100, { label: "All", value: -1 }]}
             component="div"
-            count={jobs.length}
+            count={totalRows}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={(e, newPage) => setPage(newPage)}
