@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import {
   Container,
+  Box,
+  Alert,
   Tooltip,
   FormControl,
   InputLabel,
@@ -93,6 +95,25 @@ function Calendar({ jobs, loadingJobs }) {
           )}
           showWeekdayLabels
         />
+        <Box
+          sx={{
+            mt: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          {loadingJobs === true && (
+            <Alert severity="info">
+              Loading your list of job applications...
+            </Alert>
+          )}
+          {loadingJobs.length && (
+            <Alert severity="error">
+              Could not load your job applications. {loadingJobs}
+            </Alert>
+          )}
+        </Box>
       </Container>
     </LocalizationProvider>
   );

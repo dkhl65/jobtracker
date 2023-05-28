@@ -3,6 +3,7 @@ import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { useNavigate } from "react-router-dom";
 import JobList from "./JobList";
 import Calendar from "./Calendar";
+import Statistics from "./Statistics";
 import useLogout from "../hooks/useLogout";
 import {
   Typography,
@@ -16,7 +17,7 @@ import {
 function Jobs() {
   const navigate = useNavigate();
   const logout = useLogout();
-  const [location, setLocation] = useState("joblist");
+  const [location, setLocation] = useState("Job List");
   const axiosPrivate = useAxiosPrivate();
   const [user, setUser] = useState("");
   const [loadingJobs, setLoadingJobs] = useState(true);
@@ -50,6 +51,18 @@ function Jobs() {
     navigate("/");
   };
 
+  const LinkButton = ({ pageName }) => {
+    return (
+      <Button
+        variant={location === pageName ? "outlined" : ""}
+        color="inherit"
+        onClick={() => setLocation(pageName)}
+      >
+        {pageName}
+      </Button>
+    );
+  };
+
   useEffect(() => {
     reloadJobs();
     axiosPrivate.get("/user").then((res) => {
@@ -63,20 +76,9 @@ function Jobs() {
         <Container maxWidth="xl">
           <Toolbar>
             <Box sx={{ flexGrow: 1 }}>
-              <Button
-                variant={location === "joblist" ? "outlined" : ""}
-                color="inherit"
-                onClick={() => setLocation("joblist")}
-              >
-                Job List
-              </Button>
-              <Button
-                variant={location === "calendar" ? "outlined" : ""}
-                color="inherit"
-                onClick={() => setLocation("calendar")}
-              >
-                Calendar
-              </Button>
+              <LinkButton pageName="Job List" />
+              <LinkButton pageName="Calendar" />
+              <LinkButton pageName="Statistics" />
             </Box>
             <Typography
               variant="h6"
@@ -95,15 +97,18 @@ function Jobs() {
           </Toolbar>
         </Container>
       </AppBar>
-      {location === "joblist" && (
+      {location === "Job List" && (
         <JobList
           jobs={jobs}
           loadingJobs={loadingJobs}
           reloadJobs={reloadJobs}
         />
       )}
-      {location === "calendar" && (
+      {location === "Calendar" && (
         <Calendar jobs={jobs} loadingJobs={loadingJobs} />
+      )}
+      {location === "Statistics" && (
+        <Statistics jobs={jobs} loadingJobs={loadingJobs} />
       )}
     </>
   );
