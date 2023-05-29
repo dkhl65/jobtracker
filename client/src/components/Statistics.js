@@ -68,6 +68,7 @@ function Statistics({ jobs, loadingJobs }) {
     let totalInterviewCompanies = 0;
     let totalRejections = 0;
     let totalGhosts = 0;
+    let firstApplication = dayjs().format("YYYY-MM-DD");
 
     jobs.forEach((job) => {
       let mostRecentInteraction = "";
@@ -75,6 +76,9 @@ function Statistics({ jobs, loadingJobs }) {
         totalApplications++;
         if (job.application > mostRecentInteraction) {
           mostRecentInteraction = job.application;
+        }
+        if (job.application < firstApplication) {
+          firstApplication = job.application;
         }
       }
 
@@ -118,6 +122,25 @@ function Statistics({ jobs, loadingJobs }) {
         totalGhosts++;
       }
     });
+
+    let daysElapsed = 1;
+    switch (dateRange) {
+      case "year":
+        daysElapsed = dayjs().diff(dayjs().subtract(1, "year"), "day");
+        break;
+      case "6months":
+        daysElapsed = dayjs().diff(dayjs().subtract(6, "month"), "day");
+        break;
+      case "1month":
+        daysElapsed = dayjs().diff(dayjs().subtract(1, "month"), "day");
+        break;
+      case "custom":
+        daysElapsed = upperLimit.diff(lowerLimit, "day");
+        break;
+      default:
+        daysElapsed = dayjs().diff(firstApplication, "day");
+    }
+
     setData({
       totalApplications,
       totalAssessments,
@@ -126,6 +149,7 @@ function Statistics({ jobs, loadingJobs }) {
       totalInterviewCompanies,
       totalRejections,
       totalGhosts,
+      daysElapsed,
     });
   }, [dateRange, jobs, lowerLimit, upperLimit]);
 
@@ -172,6 +196,7 @@ function Statistics({ jobs, loadingJobs }) {
                 <TableCell>Activity</TableCell>
                 <TableCell>Total</TableCell>
                 <TableCell>Percent of Applications</TableCell>
+                <TableCell>Per Week</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -179,6 +204,11 @@ function Statistics({ jobs, loadingJobs }) {
                 <TableCell>Applications</TableCell>
                 <TableCell>{data.totalApplications}</TableCell>
                 <TableCell></TableCell>
+                <TableCell>
+                  {(
+                    data.totalApplications / Math.max(data.daysElapsed / 7, 1)
+                  ).toFixed(2)}
+                </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Technical Assessments</TableCell>
@@ -192,6 +222,11 @@ function Statistics({ jobs, loadingJobs }) {
                     100
                   ).toFixed(2)}
                   %
+                </TableCell>
+                <TableCell>
+                  {(
+                    data.totalAssessments / Math.max(data.daysElapsed / 7, 1)
+                  ).toFixed(2)}
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -207,6 +242,11 @@ function Statistics({ jobs, loadingJobs }) {
                   ).toFixed(2)}
                   %
                 </TableCell>
+                <TableCell>
+                  {(
+                    data.totalInterviews / Math.max(data.daysElapsed / 7, 1)
+                  ).toFixed(2)}
+                </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Rejections</TableCell>
@@ -218,6 +258,11 @@ function Statistics({ jobs, loadingJobs }) {
                   ).toFixed(2)}
                   %
                 </TableCell>
+                <TableCell>
+                  {(
+                    data.totalRejections / Math.max(data.daysElapsed / 7, 1)
+                  ).toFixed(2)}
+                </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>No Response After 14 Days</TableCell>
@@ -228,6 +273,7 @@ function Statistics({ jobs, loadingJobs }) {
                   )}
                   %
                 </TableCell>
+                <TableCell></TableCell>
               </TableRow>
             </TableBody>
           </Table>
