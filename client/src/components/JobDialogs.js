@@ -38,6 +38,7 @@ const blankForm = {
   assessment: [""],
   interview: [""],
   rejection: "",
+  offerred: false,
   notes: "",
 };
 
@@ -81,6 +82,17 @@ const JobDialogs = forwardRef((props, ref) => {
     if (formMessage.message.length > 0) {
       return;
     }
+    if (
+      (
+        formData.current.application +
+        formData.current.assessment.toString() +
+        formData.current.interview.toString() +
+        formData.current.rejection
+      ).indexOf("Invalid Date") >= 0
+    ) {
+      return;
+    }
+
     const jobApp = {
       ...formData.current,
       company: formData.current.company.trim(),
@@ -316,7 +328,9 @@ const JobDialogs = forwardRef((props, ref) => {
             <DatePicker
               format="YYYY-MM-DD"
               margin="dense"
-              label="Rejection Date"
+              label={
+                formData.current.offerred ? "Offer Date" : "Rejection Date"
+              }
               defaultValue={
                 formData.current.rejection.length > 0
                   ? dayjs(formData.current.rejection)
@@ -328,6 +342,18 @@ const JobDialogs = forwardRef((props, ref) => {
               sx={{ mt: "15px" }}
             />
             <br />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.current.offerred}
+                  onChange={(e) => {
+                    formData.current.offerred = e.target.checked;
+                    update();
+                  }}
+                />
+              }
+              label="Job Offerred"
+            />
             <TextField
               label="Notes"
               variant="standard"

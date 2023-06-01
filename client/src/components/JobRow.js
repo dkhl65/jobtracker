@@ -49,7 +49,10 @@ function JobRow({ job, reloadJobs }) {
             <Box key={index}>{date || "None"}</Box>
           ))}
         </TableCell>
-        <TableCell>{job.rejection || "None"}</TableCell>
+        <TableCell>
+          {(job.offerred ? "Offerred " : "") + job.rejection ||
+            (!job.offerred && "None")}
+        </TableCell>
         <TableCell>
           {job.notes.split("\n").map((line, index) => (
             <Box key={index}>{line || <br />}</Box>

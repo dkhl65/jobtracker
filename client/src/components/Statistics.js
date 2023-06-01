@@ -67,6 +67,7 @@ function Statistics({ jobs, loadingJobs }) {
     let totalInterviews = 0;
     let totalInterviewCompanies = 0;
     let totalRejections = 0;
+    let totalOffers = 0;
     let totalGhosts = 0;
     let firstApplication = dayjs().format("YYYY-MM-DD");
 
@@ -112,7 +113,11 @@ function Statistics({ jobs, loadingJobs }) {
       }
 
       if (dateCheck(job.rejection)) {
-        totalRejections++;
+        if (job.offerred) {
+          totalOffers++;
+        } else {
+          totalRejections++;
+        }
         if (job.rejection > mostRecentInteraction) {
           mostRecentInteraction = job.rejection;
         }
@@ -148,6 +153,7 @@ function Statistics({ jobs, loadingJobs }) {
       totalInterviews,
       totalInterviewCompanies,
       totalRejections,
+      totalOffers,
       totalGhosts,
       daysElapsed,
     });
@@ -261,6 +267,21 @@ function Statistics({ jobs, loadingJobs }) {
                 <TableCell>
                   {(
                     data.totalRejections / Math.max(data.daysElapsed / 7, 1)
+                  ).toFixed(2)}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Offers</TableCell>
+                <TableCell>{data.totalOffers}</TableCell>
+                <TableCell>
+                  {((data.totalOffers / data.totalApplications) * 100).toFixed(
+                    2
+                  )}
+                  %
+                </TableCell>
+                <TableCell>
+                  {(
+                    data.totalOffers / Math.max(data.daysElapsed / 7, 1)
                   ).toFixed(2)}
                 </TableCell>
               </TableRow>

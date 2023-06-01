@@ -28,9 +28,15 @@ function Calendar({ jobs, loadingJobs }) {
       level: 0,
     };
     jobs.forEach((job) => {
-      const dates = job[field].split(",");
+      if (field === "rejection" && job.offerred) {
+        return; // the rejection date is used as offer date if the offerred field is true
+      }
+      const dates = job[field === "offer" ? "rejection" : field].split(",");
       dates.forEach((entry) => {
-        if (dayjs(entry).$y === year.$y) {
+        if (
+          dayjs(entry).$y === year.$y &&
+          (field !== "offer" || job.offerred)
+        ) {
           if (!dateCount[entry]) {
             dateCount[entry] = { date: entry, count: 1, level: 1 };
           } else {
@@ -77,6 +83,7 @@ function Calendar({ jobs, loadingJobs }) {
             <MenuItem value="assessment">Technical Assessments</MenuItem>
             <MenuItem value="interview">Interviews</MenuItem>
             <MenuItem value="rejection">Rejections</MenuItem>
+            <MenuItem value="offer">Offers</MenuItem>
           </Select>
         </FormControl>
         <ActivityCalendar

@@ -32,7 +32,12 @@ const Job = sequelize.define(
       type: DataTypes.STRING,
     },
     rejection: {
+      // doubles as the offer date
       type: DataTypes.STRING,
+    },
+    offerred: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
     notes: {
       type: DataTypes.TEXT,
