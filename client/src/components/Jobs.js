@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import JobList from "./JobList";
 import Calendar from "./Calendar";
 import Statistics from "./Statistics";
@@ -12,6 +12,7 @@ import {
   AppBar,
   Toolbar,
   Box,
+  Tooltip,
 } from "@mui/material";
 
 function Jobs() {
@@ -85,7 +86,14 @@ function Jobs() {
               component="div"
               sx={{ marginRight: "10px" }}
             >
-              {user}
+              <Tooltip title="Account Settings">
+                <Link
+                  style={{ textDecoration: "none", color: "white" }}
+                  to="/account"
+                >
+                  {user}
+                </Link>
+              </Tooltip>
             </Typography>
             <Button
               color="secondary"
