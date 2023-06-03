@@ -1,8 +1,12 @@
 # Client
 
-This is the client for the jobtracking app. A .env file with `REACT_APP_BASE_URL` variable is needed for API calls to the server.
+This is the client for the jobtracking app. 
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Environment Variables
+
+`REACT_APP_BASE_URL`: the base URL for API calls.
 
 ## Directory Structure
 
@@ -10,11 +14,11 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 The axios function to call the backend for both authenticated and non-authenticated routes.
 
-## components
+### components
 
 The React components that are shown on the pages, including components for requiring authentication and persisting login without local storage.
 
-## context 
+### context 
 
 Used to share authentication data across components.
 

@@ -6,7 +6,7 @@ This is the server for the jobtracking app. It runs on Express.js, with a Postgr
 
 `DATABASE_URL`: The full access URL of the PostgreSQL database. \
 `ACCESS_TOKEN_SECRET`: Generated using `require("crypto").randomBytes(64).toString("hex")` \
-`REFRESH_TOKEN_SECRET`: Generated using `require("crypto").randomBytes(64).toString("hex")` \
+`REFRESH_TOKEN_SECRET`: Generated using `require("crypto").randomBytes(64).toString("hex")`
 
 ## Directory Structure
 
@@ -14,15 +14,15 @@ This is the server for the jobtracking app. It runs on Express.js, with a Postgr
 
 Configuration for allowed origins.
 
-## middleware
+### middleware
 
 Verifies credentials and JWT.
 
-## models
+### models
 
 Describes tables in the PostgreSQL database.
 
-## routes
+### routes
 
 Functions for each route of the REST API.
 
