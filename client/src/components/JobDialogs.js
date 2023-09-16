@@ -157,6 +157,11 @@ const JobDialogs = forwardRef((props, ref) => {
               err.response.data?.name || "unknown error"
             }. Please try again later.`,
           });
+        } else if (err.response?.status === 401) {
+          setFormMessage({
+            error: true,
+            message: "Your session has expired. Please refresh the page.",
+          });
         } else {
           setFormMessage({
             error: true,
@@ -231,6 +236,8 @@ const JobDialogs = forwardRef((props, ref) => {
               defaultValue={
                 formData.current.application.length > 0
                   ? dayjs(formData.current.application)
+                  : newJob
+                  ? dayjs()
                   : null
               }
               onChange={(e) =>
