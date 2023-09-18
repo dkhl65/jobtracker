@@ -34,7 +34,7 @@ const blankForm = {
   location: "",
   link: "",
   remote: false,
-  application: "",
+  application: dayjs().format("YYYY-MM-DD"),
   assessment: [""],
   interview: [""],
   rejection: "",
