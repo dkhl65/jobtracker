@@ -89,9 +89,16 @@ function Account() {
   }, [newPassword, oldPassword]);
 
   useEffect(() => {
-    axiosPrivate.get("/user").then((res) => {
-      setUser(res.data);
-    });
+    axiosPrivate
+      .get("/user")
+      .then((res) => {
+        setUser(res.data);
+      })
+      .catch((err) => {
+        if (err.response?.status === 401) {
+          setUser("Session expired. Please refresh the page.");
+        }
+      });
   }, [axiosPrivate]);
 
   return (

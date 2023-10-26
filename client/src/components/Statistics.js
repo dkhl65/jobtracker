@@ -223,11 +223,11 @@ function Statistics({ jobs, loadingJobs }) {
                   companies
                 </TableCell>
                 <TableCell>
-                  {(
-                    (data.totalAssessmentCompanies / data.totalApplications) *
-                    100
-                  ).toFixed(2)}
-                  %
+                  {data.totalApplications > 0 &&
+                    (
+                      (data.totalAssessmentCompanies / data.totalApplications) *
+                      100
+                    ).toFixed(2) + "%"}
                 </TableCell>
                 <TableCell>
                   {(

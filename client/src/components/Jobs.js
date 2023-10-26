@@ -41,6 +41,8 @@ function Jobs() {
               err.response.data?.name || "unknown error"
             }. Please try again later.`
           );
+        } else if (err.response?.status === 401) {
+          setLoadingJobs("Your session has expired. Please refresh the page.");
         } else {
           setLoadingJobs(err.message);
         }
