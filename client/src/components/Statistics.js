@@ -223,11 +223,12 @@ function Statistics({ jobs, loadingJobs }) {
                   companies
                 </TableCell>
                 <TableCell>
-                  {data.totalApplications > 0 &&
-                    (
-                      (data.totalAssessmentCompanies / data.totalApplications) *
-                      100
-                    ).toFixed(2) + "%"}
+                  {(
+                    (data.totalAssessmentCompanies /
+                      (data.totalApplications || 1)) *
+                    100
+                  ).toFixed(2)}
+                  %
                 </TableCell>
                 <TableCell>
                   {(
@@ -243,7 +244,8 @@ function Statistics({ jobs, loadingJobs }) {
                 </TableCell>
                 <TableCell>
                   {(
-                    (data.totalInterviewCompanies / data.totalApplications) *
+                    (data.totalInterviewCompanies /
+                      (data.totalApplications || 1)) *
                     100
                   ).toFixed(2)}
                   %
@@ -259,7 +261,7 @@ function Statistics({ jobs, loadingJobs }) {
                 <TableCell>{data.totalRejections}</TableCell>
                 <TableCell>
                   {(
-                    (data.totalRejections / data.totalApplications) *
+                    (data.totalRejections / (data.totalApplications || 1)) *
                     100
                   ).toFixed(2)}
                   %
@@ -274,9 +276,10 @@ function Statistics({ jobs, loadingJobs }) {
                 <TableCell>Offers</TableCell>
                 <TableCell>{data.totalOffers}</TableCell>
                 <TableCell>
-                  {((data.totalOffers / data.totalApplications) * 100).toFixed(
-                    2
-                  )}
+                  {(
+                    (data.totalOffers / (data.totalApplications || 1)) *
+                    100
+                  ).toFixed(2)}
                   %
                 </TableCell>
                 <TableCell>
@@ -289,9 +292,10 @@ function Statistics({ jobs, loadingJobs }) {
                 <TableCell>No Response After 14 Days</TableCell>
                 <TableCell>{data.totalGhosts}</TableCell>
                 <TableCell>
-                  {((data.totalGhosts / data.totalApplications) * 100).toFixed(
-                    2
-                  )}
+                  {(
+                    (data.totalGhosts / (data.totalApplications || 1)) *
+                    100
+                  ).toFixed(2)}
                   %
                 </TableCell>
                 <TableCell></TableCell>
