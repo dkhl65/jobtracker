@@ -100,7 +100,7 @@ function Jobs() {
             <Button
               color="secondary"
               variant="contained"
-              onClick={(e) => signOut()}
+              onClick={() => signOut()}
             >
               Logout
             </Button>

@@ -20,8 +20,8 @@ router.post("/", async (req, res) => {
     application,
     assessment,
     interview,
-    rejection,
-    offerred,
+    decision,
+    offered,
     notes,
   } = req.body;
   if (!company) {
@@ -37,8 +37,8 @@ router.post("/", async (req, res) => {
       application: application,
       assessment: assessment,
       interview: interview,
-      rejection: rejection,
-      offerred: offerred,
+      decision: decision,
+      offered: offered,
       notes: notes,
     });
     return res.status(201).json({ success: "New job created." });
@@ -57,8 +57,8 @@ router.put("/", async (req, res) => {
     application,
     assessment,
     interview,
-    rejection,
-    offerred,
+    decision,
+    offered,
     notes,
   } = req.body;
   if (!id) {
@@ -74,8 +74,8 @@ router.put("/", async (req, res) => {
         application: application,
         assessment: assessment,
         interview: interview,
-        rejection: rejection,
-        offerred: offerred,
+        decision: decision,
+        offered: offered,
         notes: notes,
       },
       { where: { username: req.user, id: id } }

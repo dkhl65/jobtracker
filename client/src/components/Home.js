@@ -188,7 +188,7 @@ function Home() {
                   setConfirmUser(e.target.value);
                   setConfirmUserErrMsg("");
                 }}
-                onBlur={(e) => {
+                onBlur={() => {
                   if (
                     confirmUser.trim().toLowerCase() !==
                     user.trim().toLowerCase()
@@ -238,7 +238,7 @@ function Home() {
                   setConfirmPwd(e.target.value);
                   setConfirmPwdErrMsg("");
                 }}
-                onBlur={(e) => {
+                onBlur={() => {
                   if (confirmPwd !== pwd) {
                     setConfirmPwdErrMsg("Passwords do not match.");
                   }

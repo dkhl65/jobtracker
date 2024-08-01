@@ -37,8 +37,8 @@ const blankForm = {
   application: dayjs().format("YYYY-MM-DD"),
   assessment: [""],
   interview: [""],
-  rejection: "",
-  offerred: false,
+  decision: "",
+  offered: false,
   notes: "",
 };
 
@@ -87,7 +87,7 @@ const JobDialogs = forwardRef((props, ref) => {
         formData.current.application +
         formData.current.assessment.toString() +
         formData.current.interview.toString() +
-        formData.current.rejection
+        formData.current.decision
       ).indexOf("Invalid Date") >= 0
     ) {
       return;
@@ -340,16 +340,14 @@ const JobDialogs = forwardRef((props, ref) => {
             <DatePicker
               format="YYYY-MM-DD"
               margin="dense"
-              label={
-                formData.current.offerred ? "Offer Date" : "Rejection Date"
-              }
+              label="Decision Date"
               defaultValue={
-                formData.current.rejection.length > 0
-                  ? dayjs(formData.current.rejection)
+                formData.current.decision.length > 0
+                  ? dayjs(formData.current.decision)
                   : null
               }
               onChange={(e) =>
-                (formData.current.rejection = e ? e.format("YYYY-MM-DD") : "")
+                (formData.current.decision = e ? e.format("YYYY-MM-DD") : "")
               }
               sx={{ mt: "15px" }}
             />
@@ -357,14 +355,14 @@ const JobDialogs = forwardRef((props, ref) => {
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={formData.current.offerred}
+                  checked={formData.current.offered}
                   onChange={(e) => {
-                    formData.current.offerred = e.target.checked;
+                    formData.current.offered = e.target.checked;
                     update();
                   }}
                 />
               }
-              label="Job Offerred"
+              label="Job Offered"
             />
             <TextField
               label="Notes"

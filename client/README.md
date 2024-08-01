@@ -1,6 +1,6 @@
 # Client
 
-This is the client for the jobtracking app. 
+This is the client for the jobtracking app.
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
@@ -18,7 +18,7 @@ The axios function to call the backend for both authenticated and non-authentica
 
 The React components that are shown on the pages, including components for requiring authentication and persisting login without local storage.
 
-### context 
+### context
 
 Used to share authentication data across components.
 

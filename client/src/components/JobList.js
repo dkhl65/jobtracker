@@ -18,11 +18,25 @@ import {
   TableSortLabel,
   TablePagination,
 } from "@mui/material";
+import { CSVLink } from "react-csv";
 import ClearIcon from "@mui/icons-material/Clear";
 import JobDialogs from "./JobDialogs";
 import JobRow from "./JobRow";
 
 function JobList({ jobs, loadingJobs, reloadJobs }) {
+  const headers = [
+    { label: "Company", key: "company" },
+    { label: "Location", key: "location" },
+    { label: "Remote", key: "remote" },
+    { label: "Application Date", key: "application" },
+    { label: "Technical Assessment Dates", key: "company" },
+    { label: "Interview Dates", key: "interview" },
+    { label: "Decision Date", key: "decision" },
+    { label: "Offered", key: "offered" },
+    { label: "Notes", key: "notes" },
+    { label: "Link", key: "link" },
+  ];
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalRows, setTotalRows] = useState(0);
@@ -54,9 +68,8 @@ function JobList({ jobs, loadingJobs, reloadJobs }) {
           if (
             typeof row[field] === "string" &&
             field !== "username" &&
-            field !== "link" &&
-            (row[field].toLowerCase().indexOf(search) >= 0 ||
-              ("remote".indexOf(search) >= 0 && row.remote))
+            (row[field].toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
+              ("remote".indexOf(search.toLowerCase()) >= 0 && row.remote))
           ) {
             searchRows.push(row);
             break;
@@ -88,7 +101,7 @@ function JobList({ jobs, loadingJobs, reloadJobs }) {
               placeholder="Search…"
               value={search}
               onChange={(e) => {
-                setSearch(e.target.value.toLowerCase());
+                setSearch(e.target.value);
                 setPage(0);
               }}
               InputProps={{
@@ -124,9 +137,13 @@ function JobList({ jobs, loadingJobs, reloadJobs }) {
               setRowsPerPage(+e.target.value);
               setPage(0);
             }}
+            sx={{ mr: "10px" }}
             showFirstButton
             showLastButton
           />
+          <CSVLink filename="jobtracking" data={jobs} headers={headers}>
+            <Button variant="outlined">Download CSV</Button>
+          </CSVLink>
           <Button
             variant="contained"
             sx={{ ml: "10px" }}
@@ -181,11 +198,11 @@ function JobList({ jobs, loadingJobs, reloadJobs }) {
                 </TableCell>
                 <TableCell>
                   <TableSortLabel
-                    active={orderBy === "rejection"}
-                    direction={orderBy === "rejection" ? order : "desc"}
-                    onClick={() => changeOrder("rejection")}
+                    active={orderBy === "decision"}
+                    direction={orderBy === "decision" ? order : "desc"}
+                    onClick={() => changeOrder("decision")}
                   >
-                    Rejection Date
+                    Decision Date
                   </TableSortLabel>
                 </TableCell>
                 <TableCell>Notes</TableCell>

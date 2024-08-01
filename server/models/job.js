@@ -31,11 +31,10 @@ const Job = sequelize.define(
     interview: {
       type: DataTypes.STRING,
     },
-    rejection: {
-      // doubles as the offer date
+    decision: {
       type: DataTypes.STRING,
     },
-    offerred: {
+    offered: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },

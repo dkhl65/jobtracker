@@ -112,18 +112,18 @@ function Statistics({ jobs, loadingJobs }) {
         oneOrMore = false;
       }
 
-      if (dateCheck(job.rejection)) {
-        if (job.offerred) {
+      if (dateCheck(job.decision)) {
+        if (job.offered) {
           totalOffers++;
         } else {
           totalRejections++;
         }
-        if (job.rejection > mostRecentInteraction) {
-          mostRecentInteraction = job.rejection;
+        if (job.decision > mostRecentInteraction) {
+          mostRecentInteraction = job.decision;
         }
       }
 
-      if (!job.rejection && dayjs().diff(mostRecentInteraction, "day") > 14) {
+      if (!job.decision && dayjs().diff(mostRecentInteraction, "day") > 14) {
         totalGhosts++;
       }
     });

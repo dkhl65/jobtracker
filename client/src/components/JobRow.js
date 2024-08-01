@@ -50,8 +50,8 @@ function JobRow({ job, reloadJobs }) {
           ))}
         </TableCell>
         <TableCell>
-          {(job.offerred ? "Offerred " : "") + job.rejection ||
-            (!job.offerred && "None")}
+          {(job.offered ? "Offered " : "") + job.decision ||
+            (!job.offered && "None")}
         </TableCell>
         <TableCell>
           {job.notes.split("\n").map((line, index) => (
