@@ -19,6 +19,10 @@ function Calendar({ jobs, loadingJobs }) {
   const [data, setData] = useState([]);
   const [year, setYear] = useState(dayjs());
   const [field, setField] = useState("application");
+  const purpleTheme = {
+    light: ["hsl(0, 0%, 92%)", "rebeccapurple"],
+    dark: ["hsl(0, 0%, 92%)", "rebeccapurple"],
+  };
 
   useEffect(() => {
     const dateCount = {};
@@ -100,6 +104,7 @@ function Calendar({ jobs, loadingJobs }) {
               {block}
             </Tooltip>
           )}
+          theme={purpleTheme}
           showWeekdayLabels
         />
         <Box
